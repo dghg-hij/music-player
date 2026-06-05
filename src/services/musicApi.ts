@@ -80,7 +80,7 @@ export async function getHotSongs(limit: number = 20): Promise<HotSong[]> {
     if (!res.ok) return [];
     const json = await res.json();
     if (json.code === 200 && json.data?.songs) {
-      return json.data.songs.map((s: SearchResult, i: number) => ({
+      return json.data.songs.map((s: SearchResult) => ({
         id: s.id,
         name: s.name,
         artists: s.artists,

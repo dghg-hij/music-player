@@ -1,5 +1,4 @@
 import { Flame, Loader2, TrendingUp, ListPlus } from "lucide-react";
-import type { Song } from "../types";
 import usePlayerStore from "../store/playerStore";
 
 function formatHeat(n: number): string {

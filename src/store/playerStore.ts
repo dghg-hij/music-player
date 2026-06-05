@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import SONG_QUERIES from "../data/songs";
 import { searchSongs, getSongUrl, getSongLyric, parseLRC, getHotSongs } from "../services/musicApi";
-import type { Song, LyricLine, PlayMode, ThemeName } from "../types";
+import type { Song, LyricLine, PlayMode, ThemeName, ThemeMode, DayThemeName, Playlist } from "../types";
 
 interface PlayerStore {
   currentSongIndex: number;
@@ -25,6 +25,13 @@ interface PlayerStore {
   queue: Song[];
   showQueue: boolean;
 
+  // 新增状态
+  themeMode: ThemeMode;
+  dayTheme: DayThemeName;
+  downloads: number[];
+  recentPlays: number[];
+  playlists: Playlist[];
+
   setCurrentSongIndex: (index: number) => void;
   setIsPlaying: (playing: boolean) => void;
   setCurrentTime: (time: number) => void;
@@ -46,6 +53,7 @@ interface PlayerStore {
   playSearchResult: (song: Song) => void;
   togglePlayMode: () => void;
   toggleFavorite: (index: number) => void;
+  toggleFavoriteById: (id: number) => void;
   toggleShowFavorites: () => void;
   fetchHotSongs: () => Promise<void>;
   toggleShowHotChart: () => void;
@@ -56,6 +64,21 @@ interface PlayerStore {
   clearQueue: () => void;
   playFromQueue: (id: number) => void;
   toggleShowQueue: () => void;
+
+  // 新增 actions
+  setThemeMode: (mode: ThemeMode) => void;
+  setDayTheme: (theme: DayThemeName) => void;
+  downloadSong: (songId: number) => void;
+  isDownloaded: (songId: number) => boolean;
+  removeDownload: (songId: number) => void;
+  addToRecent: (songId: number) => void;
+  clearRecent: () => void;
+  createPlaylist: (name: string) => string;
+  addSongToPlaylist: (playlistId: string, songId: number) => void;
+  removeSongFromPlaylist: (playlistId: string, songId: number) => void;
+  deletePlaylist: (playlistId: string) => void;
+  playSong: (song: Song) => void;
+  playSongById: (songId: number) => void;
 }
 
 let nextId = 1000;
@@ -70,6 +93,7 @@ const initialSongs: Song[] = SONG_QUERIES.map((q, i) => ({
   neteaseId: 0,
   isLoading: false,
   isFavorite: false,
+  categoryId: q.categoryId,
 }));
 
 const usePlayerStore = create<PlayerStore>((set, get) => ({
@@ -94,6 +118,13 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
   queue: [],
   showQueue: false,
 
+  // 新增状态初始值
+  themeMode: "night",
+  dayTheme: "mint",
+  downloads: [],
+  recentPlays: [],
+  playlists: [],
+
   setCurrentSongIndex: (index) => set({ currentSongIndex: index }),
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   setCurrentTime: (time) => {
@@ -113,7 +144,6 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
   playNext: () => {
     const { songs, currentSongIndex, playMode, queue } = get();
 
-    // 优先从待播放列表取下一首
     if (queue.length > 0) {
       const nextSong = queue[0];
       const newQueue = queue.slice(1);
@@ -170,6 +200,9 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
   selectSong: (index) => {
     set({ currentSongIndex: index, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
     get().ensureSongSrc(index);
+    if (songsListItem(get().songs, index)) {
+      get().addToRecent(get().songs[index].id);
+    }
   },
   fetchSongsFromApi: async () => {
     set({ isLoadingSongs: true });
@@ -190,9 +223,12 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
             neteaseId: r.id,
             isLoading: false,
             isFavorite: false,
+            categoryId: q.categoryId,
           } as Song;
         }
-      } catch {}
+      } catch {
+        /* keep fallback initial song */
+      }
       return initialSongs[i];
     });
 
@@ -302,12 +338,14 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
     if (existIndex >= 0) {
       set({ currentSongIndex: existIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
       get().ensureSongSrc(existIndex);
+      get().addToRecent(songs[existIndex].id);
     } else {
       const newSong: Song = { ...song, id: nextId++, src: "", isLoading: false, isFavorite: false };
       const newSongs = [...songs, newSong];
       const newIndex = newSongs.length - 1;
       set({ songs: newSongs, currentSongIndex: newIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
       get().ensureSongSrc(newIndex);
+      get().addToRecent(newSong.id);
     }
     set({ isSearchMode: false, searchResults: [] });
   },
@@ -323,6 +361,27 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
     if (songs[index]) {
       songs[index] = { ...songs[index], isFavorite: !songs[index].isFavorite };
       set({ songs });
+    }
+  },
+  toggleFavoriteById: (id: number) => {
+    const songs = [...get().songs];
+    const idx = songs.findIndex((s) => s.id === id);
+    if (idx >= 0) {
+      songs[idx] = { ...songs[idx], isFavorite: !songs[idx].isFavorite };
+      set({ songs });
+    } else {
+      // 歌曲尚未加入本地列表时，创建一个壳子再切换
+      const stub: Song = {
+        id,
+        title: "",
+        artist: "",
+        cover: "",
+        src: "",
+        duration: 0,
+        isLoading: false,
+        isFavorite: true,
+      };
+      set({ songs: [...songs, stub] });
     }
   },
   toggleShowFavorites: () => {
@@ -362,12 +421,14 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
     if (existIndex >= 0) {
       set({ currentSongIndex: existIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
       get().ensureSongSrc(existIndex);
+      get().addToRecent(songs[existIndex].id);
     } else {
       const newSong: Song = { ...song, id: nextId++, src: "", isLoading: false, isFavorite: false };
       const newSongs = [...songs, newSong];
       const newIndex = newSongs.length - 1;
       set({ songs: newSongs, currentSongIndex: newIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
       get().ensureSongSrc(newIndex);
+      get().addToRecent(newSong.id);
     }
     set({ showHotChart: false });
   },
@@ -391,14 +452,96 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
     if (existIndex >= 0) {
       set({ currentSongIndex: existIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1, queue: newQueue });
       get().ensureSongSrc(existIndex);
+      get().addToRecent(songs[existIndex].id);
     } else {
       const newSongs = [...songs, song];
       const newIndex = newSongs.length - 1;
       set({ songs: newSongs, currentSongIndex: newIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1, queue: newQueue });
       get().ensureSongSrc(newIndex);
+      get().addToRecent(song.id);
     }
   },
   toggleShowQueue: () => set({ showQueue: !get().showQueue }),
+
+  // 新增 actions
+  setThemeMode: (mode) => set({ themeMode: mode }),
+  setDayTheme: (theme) => set({ dayTheme: theme }),
+  downloadSong: (songId: number) => {
+    const { downloads } = get();
+    if (downloads.includes(songId)) return;
+    set({ downloads: [songId, ...downloads] });
+  },
+  isDownloaded: (songId: number) => get().downloads.includes(songId),
+  removeDownload: (songId: number) => {
+    set({ downloads: get().downloads.filter((id) => id !== songId) });
+  },
+  addToRecent: (songId: number) => {
+    const { recentPlays } = get();
+    const filtered = recentPlays.filter((id) => id !== songId);
+    set({ recentPlays: [songId, ...filtered].slice(0, 50) });
+  },
+  clearRecent: () => set({ recentPlays: [] }),
+  createPlaylist: (name: string) => {
+    const id = `pl_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const newPlaylist: Playlist = {
+      id,
+      name,
+      songIds: [],
+      createdAt: Date.now(),
+    };
+    set({ playlists: [...get().playlists, newPlaylist] });
+    return id;
+  },
+  addSongToPlaylist: (playlistId: string, songId: number) => {
+    const { playlists } = get();
+    set({
+      playlists: playlists.map((p) => {
+        if (p.id === playlistId) {
+          if (p.songIds.includes(songId)) return p;
+          return { ...p, songIds: [songId, ...p.songIds] };
+        }
+        return p;
+      }),
+    });
+  },
+  removeSongFromPlaylist: (playlistId: string, songId: number) => {
+    set({
+      playlists: get().playlists.map((p) =>
+        p.id === playlistId ? { ...p, songIds: p.songIds.filter((id) => id !== songId) } : p
+      ),
+    });
+  },
+  deletePlaylist: (playlistId: string) => {
+    set({ playlists: get().playlists.filter((p) => p.id !== playlistId) });
+  },
+  playSong: (song: Song) => {
+    const { songs } = get();
+    const existIndex = songs.findIndex((s) => s.id === song.id);
+    if (existIndex >= 0) {
+      set({ currentSongIndex: existIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
+      get().ensureSongSrc(existIndex);
+    } else {
+      const newSong: Song = { ...song, id: nextId++, src: "", isLoading: false, isFavorite: false };
+      const newSongs = [...songs, newSong];
+      const newIndex = newSongs.length - 1;
+      set({ songs: newSongs, currentSongIndex: newIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
+      get().ensureSongSrc(newIndex);
+    }
+    get().addToRecent(song.id);
+  },
+  playSongById: (songId: number) => {
+    const { songs } = get();
+    const idx = songs.findIndex((s) => s.id === songId);
+    if (idx >= 0) {
+      set({ currentSongIndex: idx, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
+      get().ensureSongSrc(idx);
+      get().addToRecent(songId);
+    }
+  },
 }));
+
+function songsListItem(songs: Song[], index: number) {
+  return songs && songs[index] !== undefined;
+}
 
 export default usePlayerStore;

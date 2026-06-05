@@ -2,7 +2,6 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Search, X, Loader2 } from "lucide-react";
 import { searchSongs } from "../services/musicApi";
 import type { Song } from "../types";
-import usePlayerStore from "../store/playerStore";
 
 interface SearchBarProps {
   onSearchResult: (songs: Song[]) => void;

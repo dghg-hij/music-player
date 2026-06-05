@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Noto+Serif+SC:wght@400;600;700&family=Outfit:wght@400;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,17 +13,104 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --bg: #0d0d0d;
+  --card: #1a1a2e;
+  --card-soft: #232342;
+  --text: #ffffff;
+  --text-soft: rgba(255, 255, 255, 0.6);
+  --text-faint: rgba(255, 255, 255, 0.3);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --accent: #a855f7;
+  --accent-2: #f97316;
+  --scrollbar: rgba(168, 85, 247, 0.3);
+  --scrollbar-hover: rgba(168, 85, 247, 0.5);
+  --range-thumb: #a855f7;
+  --range-track: rgba(255, 255, 255, 0.1);
+}
+
+:root.day {
+  --bg: #faf7f2;
+  --card: #ffffff;
+  --card-soft: #f1ede5;
+  --text: #1f2937;
+  --text-soft: #6b7280;
+  --text-faint: #9ca3af;
+  --border: rgba(0, 0, 0, 0.06);
+  --border-strong: rgba(0, 0, 0, 0.12);
+  --accent: #0d9488;
+  --accent-2: #f59e0b;
+  --scrollbar: rgba(13, 148, 136, 0.3);
+  --scrollbar-hover: rgba(13, 148, 136, 0.5);
+  --range-thumb: #0d9488;
+  --range-track: rgba(0, 0, 0, 0.08);
+}
+
+:root.day.peach {
+  --accent: #f97316;
+  --accent-2: #f43f5e;
+  --range-thumb: #f97316;
+  --scrollbar: rgba(249, 115, 22, 0.3);
+  --scrollbar-hover: rgba(249, 115, 22, 0.5);
+}
+
+:root.day.sky {
+  --accent: #0ea5e9;
+  --accent-2: #06b6d4;
+  --range-thumb: #0ea5e9;
+  --scrollbar: rgba(14, 165, 233, 0.3);
+  --scrollbar-hover: rgba(14, 165, 233, 0.5);
+}
+
+:root.day.lavender {
+  --accent: #8b5cf6;
+  --accent-2: #ec4899;
+  --range-thumb: #8b5cf6;
+  --scrollbar: rgba(139, 92, 246, 0.3);
+  --scrollbar-hover: rgba(139, 92, 246, 0.5);
+}
+
+:root.day.sand {
+  --accent: #d97706;
+  --accent-2: #92400e;
+  --range-thumb: #d97706;
+  --scrollbar: rgba(217, 119, 6, 0.3);
+  --scrollbar-hover: rgba(217, 119, 6, 0.5);
+}
+
+:root.day.rose {
+  --accent: #e11d48;
+  --accent-2: #f472b6;
+  --range-thumb: #e11d48;
+  --scrollbar: rgba(225, 29, 72, 0.3);
+  --scrollbar-hover: rgba(225, 29, 72, 0.5);
+}
+
+:root.night.black {
+  --bg: #000000;
+  --card: #0a0a0a;
+  --card-soft: #141414;
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.1);
+  --accent: #a855f7;
+  --accent-2: #f97316;
+  --range-thumb: #a855f7;
+  --scrollbar: rgba(168, 85, 247, 0.3);
+  --scrollbar-hover: rgba(168, 85, 247, 0.5);
 }
 
 body {
   margin: 0;
-  background-color: #0d0d0d;
-  color: #ffffff;
+  background-color: var(--bg);
+  color: var(--text);
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -29,12 +118,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(168, 85, 247, 0.3);
-  border-radius: 2px;
+  background: var(--scrollbar);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(168, 85, 247, 0.5);
+  background: var(--scrollbar-hover);
 }
 
 input[type="range"] {
@@ -47,6 +136,7 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
+  background: var(--range-track);
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -55,21 +145,140 @@ input[type="range"]::-webkit-slider-thumb {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #a855f7;
+  background: var(--range-thumb);
   margin-top: -5px;
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+  box-shadow: 0 0 10px var(--range-thumb);
 }
 
 input[type="range"]::-moz-range-track {
   height: 4px;
   border-radius: 2px;
+  background: var(--range-track);
 }
 
 input[type="range"]::-moz-range-thumb {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #a855f7;
+  background: var(--range-thumb);
   border: none;
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+  box-shadow: 0 0 10px var(--range-thumb);
+}
+
+.clickable {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.clickable-ring {
+  box-shadow: 0 0 0 1.5px var(--accent);
+  border-radius: 0.75rem;
+}
+
+.clickable-ring:hover {
+  box-shadow: 0 0 0 2px var(--accent), 0 0 12px -2px var(--accent);
+}
+
+.clickable-pill {
+  box-shadow: 0 0 0 1.5px var(--accent);
+  border-radius: 9999px;
+}
+
+.clickable-pill:hover {
+  box-shadow: 0 0 0 2px var(--accent), 0 0 14px -2px var(--accent);
+}
+
+.icon-clickable {
+  box-shadow: 0 0 0 1.5px currentColor;
+  border-radius: 9999px;
+}
+
+.icon-clickable:hover {
+  box-shadow: 0 0 0 2px currentColor, 0 0 12px -2px currentColor;
+}
+
+.card-surface {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+}
+
+.text-primary {
+  color: var(--text);
+}
+
+.text-soft {
+  color: var(--text-soft);
+}
+
+.text-faint {
+  color: var(--text-faint);
+}
+
+.bg-card {
+  background-color: var(--card);
+}
+
+.bg-card-soft {
+  background-color: var(--card-soft);
+}
+
+.border-default {
+  border-color: var(--border);
+}
+
+.border-strong {
+  border-color: var(--border-strong);
+}
+
+.song-row-action {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  background: transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-shadow: 0 0 0 1.5px transparent;
+  border: 0;
+}
+
+.song-row-action:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: 0 0 0 1.5px var(--accent);
+}
+
+.song-row-action.is-active {
+  color: var(--accent);
+  box-shadow: 0 0 0 1.5px var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.song-row-action.is-favorite {
+  color: #ef4444;
+  box-shadow: 0 0 0 1.5px #ef4444;
+}
+
+.song-row-action.is-favorite:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+@keyframes ringPulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+
+.ring-pulse {
+  animation: ringPulse 1.6s ease-out infinite;
 }

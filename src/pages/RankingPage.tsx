@@ -1,0 +1,224 @@
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Flame, Loader2, Play } from "lucide-react";
+import { RANKINGS } from "../data/songs";
+import usePlayerStore from "../store/playerStore";
+import { searchSongs } from "../services/musicApi";
+import SongRow from "../components/SongRow";
+import type { Song } from "../types";
+
+export default function RankingPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const playSong = usePlayerStore((s) => s.playSong);
+
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const ranking = RANKINGS.find((r) => r.id === id);
+
+  useEffect(() => {
+    if (!ranking) return;
+    let cancelled = false;
+    setLoading(true);
+    setSongs([]);
+    (async () => {
+      try {
+        const results = await searchSongs(ranking.query, 30);
+        if (cancelled) return;
+        const list: Song[] = results.map((r, i) => ({
+          id: 6000 + i,
+          title: r.name,
+          artist: r.artists,
+          cover: r.picUrl || "",
+          src: "",
+          duration: r.duration ? r.duration / 1000 : 0,
+          neteaseId: r.id,
+          isLoading: false,
+          isFavorite: false,
+          heat: 100000 - i * 1000,
+        }));
+        setSongs(list);
+      } catch {
+        if (!cancelled) setSongs([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ranking]);
+
+  const handlePlayAll = () => {
+    if (songs.length === 0) return;
+    playSong(songs[0]);
+    navigate("/play");
+  };
+
+  if (!ranking) {
+    return (
+      <div className="text-center py-20">
+        <p className="font-dm text-soft">未找到该排行榜</p>
+        <Link
+          to="/ranking"
+          className="inline-block mt-4 clickable-pill px-4 py-2 rounded-full text-sm font-dm text-primary"
+          style={{ background: "var(--card-soft)" }}
+        >
+          返回排行榜
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div
+        className="relative overflow-hidden rounded-3xl p-6 md:p-8"
+        style={{
+          background: `linear-gradient(135deg, ${ranking.accent}30 0%, var(--card) 70%)`,
+          border: "1px solid var(--border)",
+        }}
+      >
+        <div
+          className="absolute -top-16 -right-16 w-64 h-64 rounded-full opacity-30 blur-3xl pointer-events-none"
+          style={{ background: ranking.accent }}
+        />
+        <Link
+          to="/ranking"
+          className="inline-flex items-center gap-1.5 font-dm text-xs text-soft hover:text-primary transition-colors clickable-pill px-3 py-1.5 mb-4"
+        >
+          <ArrowLeft size={14} /> 全部榜单
+        </Link>
+        <div className="flex items-center gap-5">
+          <div
+            className="relative w-24 h-24 md:w-32 md:h-32 rounded-2xl overflow-hidden flex-shrink-0"
+            style={{ boxShadow: `0 0 30px -4px ${ranking.accent}99` }}
+          >
+            <img
+              src={ranking.cover}
+              alt={ranking.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const t = e.target as HTMLImageElement;
+                t.style.display = "none";
+                if (t.parentElement)
+                  t.parentElement.style.background = `linear-gradient(135deg, ${ranking.accent}, var(--accent-2))`;
+              }}
+            />
+            <div
+              className="absolute inset-0 flex items-center justify-center"
+              style={{ background: "rgba(0,0,0,0.3)" }}
+            >
+              <Flame size={32} className="text-white" />
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="font-outfit font-bold text-3xl md:text-4xl text-primary">
+              {ranking.name}
+            </h1>
+            <p className="font-dm text-sm text-soft mt-2">
+              {ranking.description}
+            </p>
+            <p className="font-dm text-xs text-faint mt-1">
+              共 {songs.length} 首歌曲 · 每24小时更新
+            </p>
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={handlePlayAll}
+                disabled={songs.length === 0}
+                className="clickable-pill px-4 py-2 rounded-full text-sm font-dm text-white disabled:opacity-50"
+                style={{
+                  background: `linear-gradient(135deg, ${ranking.accent}, var(--accent-2))`,
+                }}
+              >
+                <Play size={14} className="inline mr-1" fill="currentColor" /> 播放全部
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card-surface p-2 md:p-4">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <Loader2 className="w-8 h-8 animate-spin" style={{ color: ranking.accent }} />
+            <p className="font-dm text-sm text-soft">正在拉取{ranking.name}...</p>
+          </div>
+        ) : songs.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="font-dm text-sm text-soft">该榜单暂无数据</p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {songs.map((song, i) => (
+              <SongRow key={song.id} song={song} rank={i} showRank />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function RankingListPage() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-outfit font-bold text-3xl text-primary">排行榜</h1>
+        <p className="font-dm text-sm text-soft mt-1">
+          点击榜单查看完整排行，收藏喜欢的歌曲到「我的」
+        </p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {RANKINGS.map((r) => (
+          <Link
+            key={r.id}
+            to={`/ranking/${r.id}`}
+            className="group block clickable-ring"
+            style={{ borderRadius: "1.25rem" }}
+          >
+            <div
+              className="flex items-center gap-4 p-4 rounded-2xl"
+              style={{
+                background: "var(--card)",
+                border: "1px solid var(--border)",
+              }}
+            >
+              <div
+                className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0"
+                style={{ boxShadow: `0 0 18px -2px ${r.accent}80` }}
+              >
+                <img
+                  src={r.cover}
+                  alt={r.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const t = e.target as HTMLImageElement;
+                    t.style.display = "none";
+                    if (t.parentElement)
+                      t.parentElement.style.background = `linear-gradient(135deg, ${r.accent}, var(--accent-2))`;
+                  }}
+                />
+                <div
+                  className="absolute inset-0 flex items-center justify-center"
+                  style={{ background: "rgba(0,0,0,0.3)" }}
+                >
+                  <Flame size={24} className="text-white" />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-outfit font-semibold text-lg text-primary">
+                  {r.name}
+                </h3>
+                <p className="font-dm text-xs text-soft mt-1 line-clamp-2">
+                  {r.description}
+                </p>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
