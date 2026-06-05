@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -78,8 +78,41 @@ export default function PlayerPage() {
   const [showCreateInput, setShowCreateInput] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [toast, setToast] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragTime, setDragTime] = useState(0);
+  const progressRef = useRef<HTMLDivElement>(null);
 
   const songs = usePlayerStore((s) => s.songs);
+
+  const getTimeFromPointer = useCallback((clientX: number) => {
+    if (!progressRef.current || duration <= 0) return 0;
+    const rect = progressRef.current.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    return ratio * duration;
+  }, [duration]);
+
+  const handleProgressPointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    const time = getTimeFromPointer(e.clientX);
+    setDragTime(time);
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, [getTimeFromPointer]);
+
+  const handleProgressPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDragging) return;
+    const time = getTimeFromPointer(e.clientX);
+    setDragTime(time);
+  }, [isDragging, getTimeFromPointer]);
+
+  const handleProgressPointerUp = useCallback((e: React.PointerEvent) => {
+    if (!isDragging) return;
+    const time = getTimeFromPointer(e.clientX);
+    setIsDragging(false);
+    seek(time);
+  }, [isDragging, getTimeFromPointer, seek]);
+
+  const displayTime = isDragging ? dragTime : currentTime;
 
   useEffect(() => {
     if (!toast) return;
@@ -188,25 +221,29 @@ export default function PlayerPage() {
             <div className="w-full max-w-md space-y-2">
               <div className="relative">
                 <div
-                  className="h-1.5 rounded-full overflow-hidden cursor-pointer group/progress"
+                  ref={progressRef}
+                  className="h-2 rounded-full cursor-pointer group/progress"
                   style={{ background: "var(--range-track)" }}
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const ratio = (e.clientX - rect.left) / rect.width;
-                    seek(Math.max(0, Math.min(1, ratio)) * duration);
-                  }}
+                  onPointerDown={handleProgressPointerDown}
+                  onPointerMove={handleProgressPointerMove}
+                  onPointerUp={handleProgressPointerUp}
                 >
                   <div
-                    className="h-full rounded-full"
+                    className="h-full rounded-full relative"
                     style={{
-                      width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
+                      width: `${duration > 0 ? (displayTime / duration) * 100 : 0}%`,
                       background: "linear-gradient(90deg, var(--accent), var(--accent-2))",
                     }}
-                  />
+                  >
+                    <div
+                      className="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-white shadow-lg opacity-0 group-hover/progress:opacity-100 transition-opacity"
+                      style={{ boxShadow: "0 0 8px var(--accent)" }}
+                    />
+                  </div>
                 </div>
               </div>
               <div className="flex items-center justify-between text-xs font-dm text-soft">
-                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(displayTime)}</span>
                 <span>{formatTime(duration)}</span>
               </div>
             </div>

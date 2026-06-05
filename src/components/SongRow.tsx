@@ -39,12 +39,18 @@ const SongRow = memo(function SongRow({
   const inputRef = useRef<HTMLInputElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
-  // 精确订阅，减少不必要的重渲染
+  // 精确订阅，只订阅需要的值，避免遍历整个 songs 数组
   const currentSongIndex = usePlayerStore((s) => s.currentSongIndex);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
+  // 用 song.id 直接查找，避免每次遍历
+  const songIndexInStore = usePlayerStore((s) => {
+    const idx = s.songs.findIndex((ss) => ss.id === song.id);
+    return idx;
+  });
   const isFavorite = usePlayerStore((s) => {
+    if (song.isFavorite) return true;
     const found = s.songs.find((ss) => ss.id === song.id);
-    return !!found?.isFavorite || !!song.isFavorite;
+    return !!found?.isFavorite;
   });
   const isDownloadedNow = usePlayerStore((s) => s.downloads.includes(song.id));
   const playlists = usePlayerStore((s) => s.playlists);
@@ -57,8 +63,16 @@ const SongRow = memo(function SongRow({
   const addSongToPlaylist = usePlayerStore((s) => s.addSongToPlaylist);
   const playSong = usePlayerStore((s) => s.playSong);
 
-  const songIndexInStore = usePlayerStore((s) => s.songs.findIndex((ss) => ss.id === song.id));
   const isCurrent = songIndexInStore === currentSongIndex;
+
+  const handlePlay = useCallback(() => {
+    if (onPlay) {
+      onPlay(song);
+    } else {
+      playSong(song);
+    }
+    navigate("/play");
+  }, [onPlay, song, playSong, navigate]);
 
   useEffect(() => {
     if (showCreateInput && inputRef.current) inputRef.current.focus();
@@ -81,15 +95,6 @@ const SongRow = memo(function SongRow({
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [showPlaylistPicker]);
-
-  const handlePlay = () => {
-    if (onPlay) {
-      onPlay(song);
-    } else {
-      playSong(song);
-    }
-    navigate("/play");
-  };
 
   const handleToggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();

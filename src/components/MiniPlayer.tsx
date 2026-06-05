@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Play, Pause, SkipBack, SkipForward, Loader2 } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
 import usePlayerStore from "../store/playerStore";
 import useAudioPlayer from "../hooks/useAudioPlayer";
 
@@ -23,10 +24,41 @@ export default function MiniPlayer() {
 
   const { togglePlay, seek } = useAudioPlayer();
 
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragTime, setDragTime] = useState(0);
+  const progressRef = useRef<HTMLDivElement>(null);
+
   if (!currentSong || !currentSong.title) return null;
   if (location.pathname === "/play") return null;
 
-  const ratio = duration > 0 ? Math.min(1, currentTime / duration) : 0;
+  const displayTime = isDragging ? dragTime : currentTime;
+  const ratio = duration > 0 ? Math.min(1, displayTime / duration) : 0;
+
+  const getTimeFromPointer = (clientX: number) => {
+    if (!progressRef.current || duration <= 0) return 0;
+    const rect = progressRef.current.getBoundingClientRect();
+    const r = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    return r * duration;
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+    setDragTime(getTimeFromPointer(e.clientX));
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    setDragTime(getTimeFromPointer(e.clientX));
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    seek(getTimeFromPointer(e.clientX));
+  };
 
   return (
     <div
@@ -75,17 +107,15 @@ export default function MiniPlayer() {
 
           <div className="flex-1 hidden sm:flex items-center gap-2">
             <span className="font-dm text-[10px] text-faint">
-              {formatTime(currentTime)}
+              {formatTime(displayTime)}
             </span>
             <div
-              className="flex-1 h-1 rounded-full cursor-pointer overflow-hidden"
+              ref={progressRef}
+              className="flex-1 h-2 rounded-full cursor-pointer overflow-hidden"
               style={{ background: "var(--range-track)" }}
-              onClick={(e) => {
-                e.stopPropagation();
-                const rect = e.currentTarget.getBoundingClientRect();
-                const r = (e.clientX - rect.left) / rect.width;
-                seek(Math.max(0, Math.min(1, r)) * duration);
-              }}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
             >
               <div
                 className="h-full rounded-full"
