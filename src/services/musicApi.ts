@@ -1,4 +1,6 @@
-const API_BASE = "/api/163_music";
+const API_BASE = import.meta.env.DEV
+  ? "/api/163_music"
+  : "https://api.bugpk.com/api/163_music";
 
 export interface SearchResult {
   id: number;
