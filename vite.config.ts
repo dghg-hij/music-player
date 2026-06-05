@@ -4,6 +4,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 import { traeBadgePlugin } from 'vite-plugin-trae-solo-badge';
 
 export default defineConfig({
+  base: '/music-player/',
   server: {
     host: '0.0.0.0',
     port: 5173,
