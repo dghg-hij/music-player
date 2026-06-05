@@ -57,6 +57,7 @@ export interface Ranking {
   cover: string;
   accent: string;
   query: string;
+  playlistId: string;
 }
 
 export interface Playlist {

@@ -9,6 +9,7 @@ interface PlayerStore {
   currentTime: number;
   duration: number;
   volume: number;
+  playbackRate: number;
   songs: Song[];
   isLoadingSongs: boolean;
   lyrics: LyricLine[];
@@ -37,6 +38,7 @@ interface PlayerStore {
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
   setVolume: (volume: number) => void;
+  setPlaybackRate: (rate: number) => void;
   playNext: () => void;
   playPrev: () => void;
   selectSong: (index: number) => void;
@@ -102,6 +104,7 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
   currentTime: 0,
   duration: 0,
   volume: 80,
+  playbackRate: 1,
   songs: initialSongs,
   isLoadingSongs: false,
   lyrics: [],
@@ -127,16 +130,25 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
 
   setCurrentSongIndex: (index) => set({ currentSongIndex: index }),
   setIsPlaying: (playing) => set({ isPlaying: playing }),
-  setCurrentTime: (time) => {
-    const prev = get().currentTime;
+  setCurrentTime: (time: number) => {
     set({ currentTime: time });
-    // 歌词更新不需要每帧都做，间隔超过 200ms 再更新
-    if (Math.abs(time - prev) >= 0.2) {
-      get().updateCurrentLyricIndex();
+    // 歌词更新：每帧都检查，但只在索引变化时才 setState
+    const { lyrics, currentLyricIndex } = get();
+    if (lyrics.length === 0) return;
+    let newIndex = -1;
+    for (let i = lyrics.length - 1; i >= 0; i--) {
+      if (time >= lyrics[i].time) {
+        newIndex = i;
+        break;
+      }
+    }
+    if (newIndex !== currentLyricIndex) {
+      set({ currentLyricIndex: newIndex });
     }
   },
   setDuration: (duration) => set({ duration }),
   setVolume: (volume) => set({ volume: Math.max(0, Math.min(100, volume)) }),
+  setPlaybackRate: (rate) => set({ playbackRate: rate }),
   setSongs: (songs) => set({ songs }),
   updateSongSrc: (index, src) => {
     const songs = [...get().songs];
@@ -181,6 +193,8 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
 
     set({ currentSongIndex: nextIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
     get().ensureSongSrc(nextIndex);
+    const nextSong = get().songs[nextIndex];
+    if (nextSong?.neteaseId) get().fetchLyrics(nextSong.neteaseId);
   },
   playPrev: () => {
     const { songs, currentSongIndex, playMode } = get();
@@ -200,43 +214,63 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
 
     set({ currentSongIndex: prevIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
     get().ensureSongSrc(prevIndex);
+    const prevSong = get().songs[prevIndex];
+    if (prevSong?.neteaseId) get().fetchLyrics(prevSong.neteaseId);
   },
   selectSong: (index) => {
     set({ currentSongIndex: index, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
     get().ensureSongSrc(index);
-    if (songsListItem(get().songs, index)) {
-      get().addToRecent(get().songs[index].id);
+    const song = get().songs[index];
+    if (song) {
+      get().addToRecent(song.id);
+      if (song.neteaseId) {
+        get().fetchLyrics(song.neteaseId);
+      }
     }
   },
   fetchSongsFromApi: async () => {
     set({ isLoadingSongs: true });
     const queries = SONG_QUERIES;
 
-    const promises = queries.map(async (q, i) => {
-      try {
-        const results = await searchSongs(q.query, 1);
-        if (results.length > 0) {
-          const r = results[0];
-          return {
-            id: i + 1,
-            title: r.name || q.title,
-            artist: r.artists || q.artist,
-            cover: r.picUrl || "",
-            src: "",
-            duration: r.duration ? r.duration / 1000 : 0,
-            neteaseId: r.id,
-            isLoading: false,
-            isFavorite: false,
-            categoryId: q.categoryId,
-          } as Song;
-        }
-      } catch {
-        /* keep fallback initial song */
-      }
-      return initialSongs[i];
-    });
+    // 并发请求，限制最多 5 个同时进行
+    const CONCURRENCY = 5;
+    const newSongs: Song[] = [...initialSongs];
 
-    const newSongs = await Promise.all(promises);
+    for (let i = 0; i < queries.length; i += CONCURRENCY) {
+      const batch = queries.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        batch.map(async (q, batchIdx) => {
+          const idx = i + batchIdx;
+          try {
+            const results = await searchSongs(q.query, 1);
+            if (results.length > 0) {
+              const r = results[0];
+              return {
+                id: idx + 1,
+                title: r.name || q.title,
+                artist: r.artists || q.artist,
+                cover: r.picUrl || "",
+                src: "",
+                duration: r.duration ? r.duration / 1000 : 0,
+                neteaseId: r.id,
+                isLoading: false,
+                isFavorite: false,
+                categoryId: q.categoryId,
+              } as Song;
+            }
+          } catch {
+            /* keep fallback initial song */
+          }
+          return initialSongs[idx];
+        })
+      );
+      results.forEach((song, batchIdx) => {
+        newSongs[i + batchIdx] = song;
+      });
+      // 每批次完成后立即更新 UI
+      set({ songs: [...newSongs] });
+    }
+
     set({ songs: newSongs, isLoadingSongs: false });
     get().ensureSongSrc(0);
   },
@@ -246,25 +280,26 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
     if (!song || song.src || song.isLoading) return;
     if (!song.neteaseId) return;
 
-    const updatedSongs = [...songs];
-    updatedSongs[index] = { ...updatedSongs[index], isLoading: true };
-    set({ songs: updatedSongs });
+    // 精确更新单首歌曲，避免复制整个数组
+    set((state) => {
+      const updated = [...state.songs];
+      updated[index] = { ...updated[index], isLoading: true };
+      return { songs: updated };
+    });
 
     try {
       const url = await getSongUrl(song.neteaseId);
-      if (url) {
-        const finalSongs = [...get().songs];
-        finalSongs[index] = { ...finalSongs[index], src: url, isLoading: false };
-        set({ songs: finalSongs });
-      } else {
-        const finalSongs = [...get().songs];
-        finalSongs[index] = { ...finalSongs[index], isLoading: false };
-        set({ songs: finalSongs });
-      }
+      set((state) => {
+        const updated = [...state.songs];
+        updated[index] = { ...updated[index], src: url || "", isLoading: false };
+        return { songs: updated };
+      });
     } catch {
-      const finalSongs = [...get().songs];
-      finalSongs[index] = { ...finalSongs[index], isLoading: false };
-      set({ songs: finalSongs });
+      set((state) => {
+        const updated = [...state.songs];
+        updated[index] = { ...updated[index], isLoading: false };
+        return { songs: updated };
+      });
     }
 
     if (song.neteaseId) {
@@ -361,19 +396,22 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
     set({ playMode: nextMode });
   },
   toggleFavorite: (index: number) => {
-    const songs = [...get().songs];
-    if (songs[index]) {
-      songs[index] = { ...songs[index], isFavorite: !songs[index].isFavorite };
-      set({ songs });
-    }
+    set((state) => {
+      const songs = [...state.songs];
+      if (songs[index]) {
+        songs[index] = { ...songs[index], isFavorite: !songs[index].isFavorite };
+      }
+      return { songs };
+    });
   },
   toggleFavoriteById: (id: number) => {
-    const songs = [...get().songs];
-    const idx = songs.findIndex((s) => s.id === id);
-    if (idx >= 0) {
-      songs[idx] = { ...songs[idx], isFavorite: !songs[idx].isFavorite };
-      set({ songs });
-    } else {
+    set((state) => {
+      const idx = state.songs.findIndex((s) => s.id === id);
+      if (idx >= 0) {
+        const songs = [...state.songs];
+        songs[idx] = { ...songs[idx], isFavorite: !songs[idx].isFavorite };
+        return { songs };
+      }
       // 歌曲尚未加入本地列表时，创建一个壳子再切换
       const stub: Song = {
         id,
@@ -385,8 +423,8 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
         isLoading: false,
         isFavorite: true,
       };
-      set({ songs: [...songs, stub] });
-    }
+      return { songs: [...state.songs, stub] };
+    });
   },
   toggleShowFavorites: () => {
     set({ showFavorites: !get().showFavorites });

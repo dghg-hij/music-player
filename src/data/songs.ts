@@ -93,57 +93,63 @@ export const CATEGORIES: Category[] = [
 export const RANKINGS: Ranking[] = [
   {
     id: "hot",
-    name: "24h 热度榜",
-    description: "过去24小时最热门的歌曲",
+    name: "热歌榜",
+    description: "每周最热门的歌曲，每周更新",
     cover:
       "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=fire%20flame%20chart%20number%20one%20winner%20orange%20dark&image_size=square_hd",
     accent: "#F97316",
     query: "热门",
+    playlistId: "3778678",
   },
   {
     id: "new",
     name: "新歌榜",
-    description: "最新发布的热门单曲",
+    description: "最新发布的热门单曲，每周更新",
     cover:
       "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=new%20music%20release%20bright%20fresh%20sky%20blue&image_size=square_hd",
     accent: "#0EA5E9",
     query: "新歌",
+    playlistId: "3779629",
   },
   {
     id: "original",
     name: "原创榜",
-    description: "独立音乐人原创佳作",
+    description: "独立音乐人原创佳作，每周更新",
     cover:
       "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=original%20music%20artist%20studio%20creative%20purple%20violet&image_size=square_hd",
     accent: "#A855F7",
     query: "原创",
+    playlistId: "2884035",
   },
   {
-    id: "飙升",
+    id: "surge",
     name: "飙升榜",
-    description: "上升势头最猛的歌曲",
+    description: "上升势头最猛的歌曲，每周更新",
     cover:
       "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=rocket%20launch%20sky%20trend%20rising%20green%20momentum&image_size=square_hd",
     accent: "#22C55E",
     query: "飙升",
+    playlistId: "19723756",
   },
   {
     id: "classic",
     name: "经典榜",
-    description: "历久弥新的传世金曲",
+    description: "历久弥新的传世金曲，每周更新",
     cover:
       "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=classic%20golden%20vinyl%20record%20retro%20elegant%20amber&image_size=square_hd",
     accent: "#F59E0B",
     query: "经典",
+    playlistId: "71384707",
   },
   {
     id: "ancient",
     name: "古风榜",
-    description: "国风古韵，仙侠之声",
+    description: "国风古韵，仙侠之声，每周更新",
     cover:
       "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20ancient%20style%20music%20ink%20moon%20zither%20serene&image_size=square_hd",
     accent: "#A855F7",
     query: "古风",
+    playlistId: "514919830",
   },
 ];
 

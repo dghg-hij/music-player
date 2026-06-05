@@ -48,10 +48,10 @@ export default function HotChart() {
       <div className="flex items-center gap-2 mb-4 px-1">
         <Flame size={18} className="text-orange-400" />
         <h3 className="font-outfit font-semibold text-lg text-white">
-          24h 热度榜
+          每周热歌榜
         </h3>
         <span className="font-dm text-[10px] text-white/25 ml-auto flex items-center gap-1">
-          <TrendingUp size={10} /> 每24小时更新
+          <TrendingUp size={10} /> 每周更新
         </span>
       </div>
       <div className="flex-1 overflow-y-auto space-y-1 pr-1">

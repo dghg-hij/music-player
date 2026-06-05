@@ -13,17 +13,16 @@ function formatTime(s: number) {
 export default function MiniPlayer() {
   const navigate = useNavigate();
   const location = useLocation();
-  const songs = usePlayerStore((s) => s.songs);
   const currentSongIndex = usePlayerStore((s) => s.currentSongIndex);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const currentTime = usePlayerStore((s) => s.currentTime);
   const duration = usePlayerStore((s) => s.duration);
+  const currentSong = usePlayerStore((s) => s.songs[s.currentSongIndex]);
   const playNext = usePlayerStore((s) => s.playNext);
   const playPrev = usePlayerStore((s) => s.playPrev);
 
   const { togglePlay, seek } = useAudioPlayer();
 
-  const currentSong = songs[currentSongIndex];
   if (!currentSong || !currentSong.title) return null;
   if (location.pathname === "/play") return null;
 

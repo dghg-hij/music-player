@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, memo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Download,
@@ -23,7 +23,7 @@ interface SongRowProps {
   showPlaylistMenu?: boolean;
 }
 
-export default function SongRow({
+const SongRow = memo(function SongRow({
   song,
   index,
   showRank = false,
@@ -39,10 +39,14 @@ export default function SongRow({
   const inputRef = useRef<HTMLInputElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
+  // 精确订阅，减少不必要的重渲染
   const currentSongIndex = usePlayerStore((s) => s.currentSongIndex);
-  const songs = usePlayerStore((s) => s.songs);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
-  const downloads = usePlayerStore((s) => s.downloads);
+  const isFavorite = usePlayerStore((s) => {
+    const found = s.songs.find((ss) => ss.id === song.id);
+    return !!found?.isFavorite || !!song.isFavorite;
+  });
+  const isDownloadedNow = usePlayerStore((s) => s.downloads.includes(song.id));
   const playlists = usePlayerStore((s) => s.playlists);
 
   const addToQueue = usePlayerStore((s) => s.addToQueue);
@@ -53,10 +57,8 @@ export default function SongRow({
   const addSongToPlaylist = usePlayerStore((s) => s.addSongToPlaylist);
   const playSong = usePlayerStore((s) => s.playSong);
 
-  const songIndexInStore = songs.findIndex((s) => s.id === song.id);
+  const songIndexInStore = usePlayerStore((s) => s.songs.findIndex((ss) => ss.id === song.id));
   const isCurrent = songIndexInStore === currentSongIndex;
-  const isFavorite = !!song.isFavorite || (songIndexInStore >= 0 && songs[songIndexInStore].isFavorite);
-  const isDownloadedNow = downloads.includes(song.id);
 
   useEffect(() => {
     if (showCreateInput && inputRef.current) inputRef.current.focus();
@@ -338,4 +340,6 @@ export default function SongRow({
       )}
     </div>
   );
-}
+});
+
+export default SongRow;

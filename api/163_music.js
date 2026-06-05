@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  const { type, s, id, limit, level } = req.query;
+  const { type, s, id, limit, level, playlist_id } = req.query;
 
   let url = "https://api.bugpk.com/api/163_music?";
   const params = [];
@@ -10,7 +10,12 @@ export default async function handler(req, res) {
   if (limit) params.push("limit=" + limit);
   if (level) params.push("level=" + level);
 
-  url += params.join("&");
+  // 榜单接口：使用网易云歌单详情
+  if (type === "playlist" && playlist_id) {
+    url = `https://api.bugpk.com/api/163_music?type=playlist&id=${playlist_id}`;
+  } else {
+    url += params.join("&");
+  }
 
   try {
     const response = await fetch(url);

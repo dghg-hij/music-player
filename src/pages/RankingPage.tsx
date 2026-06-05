@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Flame, Loader2, Play } from "lucide-react";
 import { RANKINGS } from "../data/songs";
 import usePlayerStore from "../store/playerStore";
-import { searchSongs } from "../services/musicApi";
+import { getChartSongs } from "../services/musicApi";
 import SongRow from "../components/SongRow";
 import type { Song } from "../types";
 
@@ -24,7 +24,7 @@ export default function RankingPage() {
     setSongs([]);
     (async () => {
       try {
-        const results = await searchSongs(ranking.query, 30);
+        const results = await getChartSongs(ranking.playlistId, 20);
         if (cancelled) return;
         const list: Song[] = results.map((r, i) => ({
           id: 6000 + i,
@@ -36,7 +36,7 @@ export default function RankingPage() {
           neteaseId: r.id,
           isLoading: false,
           isFavorite: false,
-          heat: 100000 - i * 1000,
+          heat: 100000 - i * 4000,
         }));
         setSongs(list);
       } catch {
@@ -121,7 +121,7 @@ export default function RankingPage() {
               {ranking.description}
             </p>
             <p className="font-dm text-xs text-faint mt-1">
-              共 {songs.length} 首歌曲 · 每24小时更新
+              共 {songs.length} 首歌曲 · 每周更新
             </p>
             <div className="flex gap-2 mt-4">
               <button

@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import type { LyricLine } from "../types";
 
 interface LyricsProps {
@@ -8,25 +8,19 @@ interface LyricsProps {
 
 export default function Lyrics({ lyrics, currentLyricIndex }: LyricsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const activeLineRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
 
+  // 使用 CSS transform 实现平滑滚动，避免 scrollTo 的卡顿
   useEffect(() => {
-    if (!activeLineRef.current || !containerRef.current) return;
+    if (!innerRef.current || !containerRef.current) return;
     const container = containerRef.current;
-    const activeLine = activeLineRef.current;
-    const containerRect = container.getBoundingClientRect();
-    const activeRect = activeLine.getBoundingClientRect();
-    const scrollTarget =
-      activeRect.top -
-      containerRect.top -
-      containerRect.height / 2 +
-      activeRect.height / 2 +
-      container.scrollTop;
-
-    container.scrollTo({
-      top: scrollTarget,
-      behavior: "smooth",
-    });
+    const inner = innerRef.current;
+    // 每行高度约 36px (py-1 + text)，计算当前行偏移
+    const lineHeight = 36;
+    const targetOffset = currentLyricIndex * lineHeight;
+    const containerHeight = container.clientHeight;
+    const scrollTarget = targetOffset - containerHeight / 2 + lineHeight / 2;
+    inner.style.transform = `translateY(${-scrollTarget}px)`;
   }, [currentLyricIndex]);
 
   if (lyrics.length === 0) {
@@ -40,27 +34,25 @@ export default function Lyrics({ lyrics, currentLyricIndex }: LyricsProps) {
   return (
     <div
       ref={containerRef}
-      className="h-full overflow-y-auto px-2 py-16 scrollbar-thin"
+      className="h-full overflow-hidden px-2 py-16"
     >
-      <div className="space-y-3">
+      <div
+        ref={innerRef}
+        className="space-y-3 transition-transform duration-300 ease-out"
+      >
         {lyrics.map((line, index) => {
           const isActive = index === currentLyricIndex;
           const isNear = Math.abs(index - currentLyricIndex) <= 2;
           return (
             <div
               key={`${index}-${line.time}`}
-              ref={isActive ? activeLineRef : null}
-              className={`transition-all duration-500 ease-out py-1 px-3 rounded-lg ${
+              className={`transition-all duration-300 ease-out py-1 px-3 rounded-lg ${
                 isActive
-                  ? "text-transparent bg-clip-text bg-gradient-to-r from-accent to-accent-orange font-outfit font-semibold text-lg scale-105"
+                  ? "text-transparent bg-clip-text bg-gradient-to-r from-accent to-accent-orange font-outfit font-semibold text-lg"
                   : isNear
                     ? "text-white/50 font-dm text-sm"
                     : "text-white/20 font-dm text-sm"
               }`}
-              style={{
-                transform: isActive ? "scale(1.05)" : "scale(1)",
-                transformOrigin: "left center",
-              }}
             >
               {line.text}
             </div>

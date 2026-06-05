@@ -46,7 +46,6 @@ function PlayModeLabel({ mode }: { mode: PlayMode }) {
 
 export default function PlayerPage() {
   const navigate = useNavigate();
-  const songs = usePlayerStore((s) => s.songs);
   const currentSongIndex = usePlayerStore((s) => s.currentSongIndex);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const currentTime = usePlayerStore((s) => s.currentTime);
@@ -55,8 +54,12 @@ export default function PlayerPage() {
   const lyrics = usePlayerStore((s) => s.lyrics);
   const currentLyricIndex = usePlayerStore((s) => s.currentLyricIndex);
   const playMode = usePlayerStore((s) => s.playMode);
+  const playbackRate = usePlayerStore((s) => s.playbackRate);
+  const setPlaybackRate = usePlayerStore((s) => s.setPlaybackRate);
   const downloads = usePlayerStore((s) => s.downloads);
   const playlists = usePlayerStore((s) => s.playlists);
+  const currentSong = usePlayerStore((s) => s.songs[s.currentSongIndex]);
+  const songsCount = usePlayerStore((s) => s.songs.filter((s2) => s2.title).length);
 
   const playNext = usePlayerStore((s) => s.playNext);
   const playPrev = usePlayerStore((s) => s.playPrev);
@@ -76,7 +79,7 @@ export default function PlayerPage() {
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [toast, setToast] = useState("");
 
-  const currentSong = songs[currentSongIndex];
+  const songs = usePlayerStore((s) => s.songs);
 
   useEffect(() => {
     if (!toast) return;
@@ -416,6 +419,26 @@ export default function PlayerPage() {
               className="flex-1"
             />
             <span className="font-dm text-xs text-soft w-10 text-right">{volume}</span>
+            <div className="ml-3 flex items-center gap-1 pl-3 border-l border-default">
+              {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
+                <button
+                  key={rate}
+                  onClick={() => setPlaybackRate(rate)}
+                  className={`px-2 py-1 rounded-md text-xs font-dm transition-all ${
+                    playbackRate === rate
+                      ? "text-white"
+                      : "text-soft hover:text-primary"
+                  }`}
+                  style={
+                    playbackRate === rate
+                      ? { background: "var(--accent)" }
+                      : { background: "transparent" }
+                  }
+                >
+                  {rate}x
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -439,17 +462,19 @@ export default function PlayerPage() {
               <Lyrics lyrics={lyrics} currentLyricIndex={currentLyricIndex} />
             ) : (
               <div className="space-y-1 overflow-y-auto h-full pr-1">
-                {songs.filter((s) => s.title).map((song, idx) => (
+                {songs.filter((s) => s.title).map((song, idx) => {
+                  const realIndex = songs.indexOf(song);
+                  return (
                   <button
                     key={song.id}
-                    onClick={() => usePlayerStore.getState().selectSong(idx)}
+                    onClick={() => usePlayerStore.getState().selectSong(realIndex)}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-all duration-200 ${
-                      idx === currentSongIndex
+                      realIndex === currentSongIndex
                         ? "clickable-ring"
                         : "hover:bg-card-soft"
                     }`}
                     style={
-                      idx === currentSongIndex
+                      realIndex === currentSongIndex
                         ? {
                             background: "color-mix(in srgb, var(--accent) 18%, transparent)",
                             color: "var(--accent)",
@@ -458,14 +483,15 @@ export default function PlayerPage() {
                     }
                   >
                     <span className="w-6 text-center text-xs font-dm">
-                      {idx === currentSongIndex && isPlaying ? "▶" : idx + 1}
+                      {realIndex === currentSongIndex && isPlaying ? "▶" : idx + 1}
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="font-outfit text-sm truncate">{song.title}</p>
                       <p className="font-dm text-xs text-soft truncate">{song.artist}</p>
                     </div>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

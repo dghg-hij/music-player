@@ -75,6 +75,75 @@ export async function getSongLyric(id: number): Promise<string> {
   }
 }
 
+export interface ChartSong {
+  id: number;
+  name: string;
+  artists: string;
+  album: string;
+  picUrl: string;
+  duration: number;
+}
+
+// 获取当前周数作为缓存 key
+function getWeekKey(): string {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  const week = Math.ceil(((now.getTime() - start.getTime()) / 86400000 + start.getDay() + 1) / 7);
+  return `${now.getFullYear()}-W${week}`;
+}
+
+// 从 localStorage 读取每周缓存
+function getCachedChart(playlistId: string): ChartSong[] | null {
+  try {
+    const key = `chart_${playlistId}_${getWeekKey()}`;
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+// 写入每周缓存
+function setCachedChart(playlistId: string, songs: ChartSong[]): void {
+  try {
+    const key = `chart_${playlistId}_${getWeekKey()}`;
+    localStorage.setItem(key, JSON.stringify(songs));
+  } catch {
+    // localStorage 满了就忽略
+  }
+}
+
+export async function getChartSongs(playlistId: string, limit: number = 20): Promise<ChartSong[]> {
+  // 先查缓存
+  const cached = getCachedChart(playlistId);
+  if (cached && cached.length > 0) return cached;
+
+  try {
+    const res = await fetch(
+      `${API_BASE}?type=playlist&playlist_id=${playlistId}`
+    );
+    if (!res.ok) return [];
+    const json = await res.json();
+    if (json.code === 200 && json.data?.songs) {
+      const songs: ChartSong[] = json.data.songs.slice(0, limit).map((s: SearchResult) => ({
+        id: s.id,
+        name: s.name,
+        artists: s.artists,
+        album: s.album,
+        picUrl: s.picUrl,
+        duration: s.duration,
+      }));
+      // 写入缓存
+      if (songs.length > 0) setCachedChart(playlistId, songs);
+      return songs;
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
 export interface HotSong {
   id: number;
   name: string;
@@ -85,23 +154,39 @@ export interface HotSong {
   heat: number;
 }
 
+// 热歌榜使用网易云官方热歌榜
+const HOT_CHART_PLAYLIST_ID = "3778678";
+
 export async function getHotSongs(limit: number = 20): Promise<HotSong[]> {
+  // 先查缓存
+  const cached = getCachedChart(HOT_CHART_PLAYLIST_ID);
+  if (cached && cached.length > 0) {
+    return cached.map((s, i) => ({
+      ...s,
+      heat: Math.floor(1000000 - i * 40000 + Math.random() * 10000),
+    }));
+  }
+
   try {
     const res = await fetch(
-      `${API_BASE}?type=search&s=热门歌曲&limit=${limit}`
+      `${API_BASE}?type=playlist&playlist_id=${HOT_CHART_PLAYLIST_ID}`
     );
     if (!res.ok) return [];
     const json = await res.json();
     if (json.code === 200 && json.data?.songs) {
-      return json.data.songs.map((s: SearchResult) => ({
+      const songs: HotSong[] = json.data.songs.slice(0, limit).map((s: SearchResult, i: number) => ({
         id: s.id,
         name: s.name,
         artists: s.artists,
         album: s.album,
         picUrl: s.picUrl,
         duration: s.duration,
-        heat: Math.floor(Math.random() * 900000 + 100000),
+        heat: Math.floor(1000000 - i * 40000 + Math.random() * 10000),
       }));
+      // 写入缓存
+      const chartSongs: ChartSong[] = songs.map(({ heat, ...rest }) => rest);
+      if (chartSongs.length > 0) setCachedChart(HOT_CHART_PLAYLIST_ID, chartSongs);
+      return songs;
     }
     return [];
   } catch {
