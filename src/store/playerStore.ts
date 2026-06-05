@@ -128,8 +128,12 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
   setCurrentSongIndex: (index) => set({ currentSongIndex: index }),
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   setCurrentTime: (time) => {
+    const prev = get().currentTime;
     set({ currentTime: time });
-    get().updateCurrentLyricIndex();
+    // 歌词更新不需要每帧都做，间隔超过 200ms 再更新
+    if (Math.abs(time - prev) >= 0.2) {
+      get().updateCurrentLyricIndex();
+    }
   },
   setDuration: (duration) => set({ duration }),
   setVolume: (volume) => set({ volume: Math.max(0, Math.min(100, volume)) }),

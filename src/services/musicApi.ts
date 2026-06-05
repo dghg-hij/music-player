@@ -2,6 +2,10 @@ const API_BASE = import.meta.env.DEV
   ? "/api/163_music"
   : "https://api.bugpk.com/api/163_music";
 
+// 音源 URL 缓存，避免重复请求和 URL 过期
+const urlCache = new Map<number, { url: string; expireAt: number }>();
+const CACHE_TTL = 10 * 60 * 1000; // 10 分钟过期
+
 export interface SearchResult {
   id: number;
   name: string;
@@ -31,14 +35,23 @@ export async function searchSongs(
 }
 
 export async function getSongUrl(id: number): Promise<string | null> {
+  // 检查缓存
+  const cached = urlCache.get(id);
+  if (cached && cached.expireAt > Date.now()) {
+    return cached.url;
+  }
+
   try {
     const res = await fetch(
-      `${API_BASE}?type=url&id=${id}&level=standard`
+      `${API_BASE}?type=url&id=${id}&level=exhigh`
     );
     if (!res.ok) return null;
     const json = await res.json();
     if (json.code === 200 && json.data?.[0]?.url) {
-      return json.data[0].url;
+      const url = json.data[0].url;
+      // 写入缓存
+      urlCache.set(id, { url, expireAt: Date.now() + CACHE_TTL });
+      return url;
     }
     return null;
   } catch {

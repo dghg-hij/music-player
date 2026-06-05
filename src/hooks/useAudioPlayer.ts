@@ -17,36 +17,54 @@ export default function useAudioPlayer(): AudioPlayerControls {
   const setCurrentTime = usePlayerStore((s) => s.setCurrentTime);
   const setDuration = usePlayerStore((s) => s.setDuration);
   const playNext = usePlayerStore((s) => s.playNext);
+  const ensureSongSrc = usePlayerStore((s) => s.ensureSongSrc);
 
   useEffect(() => {
     if (!audioRef.current) {
       audioRef.current = new Audio();
+      audioRef.current.preload = "auto";
     }
     const audio = audioRef.current;
+    let rafId: number;
 
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
-    };
-
-    const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
     };
 
     const handleEnded = () => {
       playNext();
     };
 
+    const tick = () => {
+      setCurrentTime(audio.currentTime);
+      rafId = requestAnimationFrame(tick);
+    };
+
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("ended", handleEnded);
 
+    if (isPlaying) {
+      rafId = requestAnimationFrame(tick);
+    }
+
     return () => {
+      cancelAnimationFrame(rafId);
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
       audio.removeEventListener("ended", handleEnded);
       audio.pause();
     };
-  }, [setDuration, setCurrentTime, playNext]);
+  }, [setDuration, setCurrentTime, playNext, isPlaying]);
+
+  // 预加载下一首歌曲的音源
+  useEffect(() => {
+    const nextIndex = currentSongIndex + 1;
+    if (nextIndex < songs.length) {
+      const nextSong = songs[nextIndex];
+      if (nextSong && !nextSong.src && !nextSong.isLoading && nextSong.neteaseId) {
+        ensureSongSrc(nextIndex);
+      }
+    }
+  }, [currentSongIndex, songs, ensureSongSrc]);
 
   useEffect(() => {
     const audio = audioRef.current;
