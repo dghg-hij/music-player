@@ -1,16 +1,18 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Flame, Loader2, Play } from "lucide-react";
+import { ArrowLeft, Flame, Loader2, Play, ListPlus } from "lucide-react";
 import { RANKINGS } from "../data/songs";
 import usePlayerStore from "../store/playerStore";
 import { getChartSongs } from "../services/musicApi";
 import SongRow from "../components/SongRow";
+import BatchActions from "../components/BatchActions";
 import type { Song } from "../types";
 
 export default function RankingPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const playSong = usePlayerStore((s) => s.playSong);
+  const addToQueue = usePlayerStore((s) => s.addToQueue);
 
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(false);
@@ -134,12 +136,25 @@ export default function RankingPage() {
               >
                 <Play size={14} className="inline mr-1" fill="currentColor" /> 播放全部
               </button>
+              <button
+                onClick={() => songs.forEach((s) => addToQueue(s))}
+                disabled={songs.length === 0}
+                className="clickable-pill px-4 py-2 rounded-full text-sm font-dm text-primary disabled:opacity-50"
+                style={{
+                  background: "var(--card-soft)",
+                  border: "1px solid var(--border-strong)",
+                }}
+              >
+                <ListPlus size={14} className="inline mr-1" /> 加入待播放
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="card-surface p-2 md:p-4">
+      <div className="space-y-3">
+        {!loading && songs.length > 0 && <BatchActions songs={songs} />}
+        <div className="card-surface p-2 md:p-4">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <Loader2 className="w-8 h-8 animate-spin" style={{ color: ranking.accent }} />
@@ -156,6 +171,7 @@ export default function RankingPage() {
             ))}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

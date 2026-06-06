@@ -1,8 +1,11 @@
-import { Link } from "react-router-dom";
-import { ChevronRight, Flame, TrendingUp } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ChevronRight, Flame, TrendingUp, Search, Play, Pause, Music2 } from "lucide-react";
 import { CATEGORIES, RANKINGS } from "../data/songs";
 import usePlayerStore from "../store/playerStore";
 import SongRow from "../components/SongRow";
+import BatchActions from "../components/BatchActions";
+import { audioControls } from "../hooks/useAudioPlayer";
+import { useState } from "react";
 
 function CategoryCard({
   id,
@@ -125,10 +128,15 @@ function RankingCard({
 }
 
 export default function HomePage() {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
   const songs = usePlayerStore((s) => s.songs);
   const hotSongs = usePlayerStore((s) => s.hotSongs);
   const isLoadingHot = usePlayerStore((s) => s.isLoadingHot);
   const fetchHotSongs = usePlayerStore((s) => s.fetchHotSongs);
+  const currentSong = usePlayerStore((s) => s.songs[s.currentSongIndex]);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const togglePlay = audioControls.togglePlay;
 
   const previewFor = (ids: string[]) => {
     const list = songs
@@ -142,6 +150,86 @@ export default function HomePage() {
 
   return (
     <div className="space-y-10">
+      {/* 搜索框 */}
+      <div
+        className="flex items-center gap-2 rounded-2xl px-4 py-3"
+        style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+      >
+        <Search size={18} className="text-faint flex-shrink-0" />
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && searchQuery.trim()) {
+              navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+            }
+          }}
+          placeholder="搜索歌手或歌曲..."
+          className="flex-1 bg-transparent text-sm text-primary outline-none placeholder:text-faint font-dm"
+        />
+        <button
+          onClick={() => {
+            if (searchQuery.trim()) {
+              navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+            }
+          }}
+          className="px-3 py-1.5 rounded-full text-xs font-dm text-white flex-shrink-0"
+          style={{ background: "var(--accent)" }}
+        >
+          搜索
+        </button>
+      </div>
+
+      {/* 正在播放 */}
+      {currentSong && currentSong.title && (
+        <div
+          className="flex items-center gap-4 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:scale-[1.01]"
+          style={{
+            background: "linear-gradient(135deg, color-mix(in srgb, var(--accent) 15%, var(--card)) 0%, var(--card) 80%)",
+            border: "1px solid var(--border)",
+            boxShadow: isPlaying ? "0 4px 24px -4px var(--accent)30" : "none",
+          }}
+          onClick={() => navigate("/play")}
+        >
+          <div
+            className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0"
+            style={{ boxShadow: "0 0 16px -2px var(--accent)40" }}
+          >
+            {currentSong.cover ? (
+              <img src={currentSong.cover} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div
+                className="w-full h-full flex items-center justify-center"
+                style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-2))" }}
+              >
+                <Music2 size={20} className="text-white/70" />
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-dm text-[10px] text-soft flex items-center gap-1.5 mb-0.5">
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full animate-pulse"
+                style={{ background: "var(--accent)" }}
+              />
+              正在播放
+            </p>
+            <p className="font-outfit font-semibold text-sm text-primary truncate">{currentSong.title}</p>
+            <p className="font-dm text-xs text-soft truncate">{currentSong.artist}</p>
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0 transition-transform active:scale-90"
+            style={{
+              background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
+              boxShadow: "0 0 16px -2px var(--accent)",
+            }}
+          >
+            {isPlaying ? <Pause size={16} fill="white" /> : <Play size={16} fill="white" className="ml-0.5" />}
+          </button>
+        </div>
+      )}
+
       <section
         className="relative overflow-hidden rounded-3xl p-8 md:p-10"
         style={{
@@ -265,13 +353,14 @@ export default function HomePage() {
             热门推荐
           </h2>
           <button
-            onClick={fetchHotSongs}
+            onClick={() => fetchHotSongs(true)}
             className="font-dm text-xs text-soft hover:text-primary transition-colors clickable-pill px-3 py-1.5"
           >
             刷新
           </button>
         </div>
         <div className="card-surface p-2 md:p-4">
+          {!isLoadingHot && hotSongs.length > 0 && <div className="mb-3"><BatchActions songs={hotSongs.slice(0, 10)} /></div>}
           {isLoadingHot && hotSongs.length === 0 ? (
             <div className="text-center py-12">
               <Flame
@@ -290,7 +379,7 @@ export default function HomePage() {
               />
               <p className="font-dm text-sm text-soft mb-3">热门歌曲加载失败</p>
               <button
-                onClick={fetchHotSongs}
+                onClick={() => fetchHotSongs()}
                 className="px-4 py-2 rounded-full text-sm font-dm text-white"
                 style={{ background: "var(--accent)" }}
               >

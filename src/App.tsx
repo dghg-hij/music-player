@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import usePlayerStore from "./store/playerStore";
 import useAudioPlayer from "./hooks/useAudioPlayer";
 import TopNav from "./components/TopNav";
@@ -9,11 +9,26 @@ import CategoryPage from "./pages/CategoryPage";
 import LibraryPage from "./pages/LibraryPage";
 import MyPage from "./pages/MyPage";
 import PlayerPage from "./pages/PlayerPage";
+import SearchPage from "./pages/SearchPage";
 import { RankingListPage } from "./pages/RankingPage";
 import RankingPage from "./pages/RankingPage";
 
 function AudioController() {
   useAudioPlayer();
+
+  // 歌曲播放结束后自动跳转到播放页
+  const navigate = useNavigate();
+  const location = useLocation();
+  const playTrigger = usePlayerStore((s) => s.playTrigger);
+  const prevTriggerRef = useRef(playTrigger);
+
+  useEffect(() => {
+    if (playTrigger > prevTriggerRef.current && location.pathname !== "/play") {
+      navigate("/play");
+    }
+    prevTriggerRef.current = playTrigger;
+  }, [playTrigger, navigate, location.pathname]);
+
   return null;
 }
 
@@ -44,6 +59,7 @@ export default function App() {
             <Route path="/library" element={<LibraryPage />} />
             <Route path="/my" element={<MyPage />} />
             <Route path="/play" element={<PlayerPage />} />
+            <Route path="/search" element={<SearchPage />} />
             <Route
               path="*"
               element={

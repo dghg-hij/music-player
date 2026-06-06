@@ -1,8 +1,8 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Play, Pause, SkipBack, SkipForward, Loader2 } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Loader2, ListPlus, X } from "lucide-react";
 import { useState, useRef, useCallback } from "react";
 import usePlayerStore from "../store/playerStore";
-import useAudioPlayer from "../hooks/useAudioPlayer";
+import { audioControls } from "../hooks/useAudioPlayer";
 
 function formatTime(s: number) {
   if (!s || isNaN(s)) return "0:00";
@@ -21,12 +21,18 @@ export default function MiniPlayer() {
   const currentSong = usePlayerStore((s) => s.songs[s.currentSongIndex]);
   const playNext = usePlayerStore((s) => s.playNext);
   const playPrev = usePlayerStore((s) => s.playPrev);
+  const queue = usePlayerStore((s) => s.queue);
+  const removeFromQueue = usePlayerStore((s) => s.removeFromQueue);
+  const clearQueue = usePlayerStore((s) => s.clearQueue);
 
-  const { togglePlay, seek } = useAudioPlayer();
+  const { togglePlay, seek } = audioControls;
 
   const [isDragging, setIsDragging] = useState(false);
   const [dragTime, setDragTime] = useState(0);
+  const [showQueuePopup, setShowQueuePopup] = useState(false);
+  const [popupPos, setPopupPos] = useState({ right: 0, bottom: 0 });
   const progressRef = useRef<HTMLDivElement>(null);
+  const queueBtnRef = useRef<HTMLButtonElement>(null);
 
   if (!currentSong || !currentSong.title) return null;
   if (location.pathname === "/play") return null;
@@ -46,7 +52,7 @@ export default function MiniPlayer() {
     e.stopPropagation();
     setIsDragging(true);
     setDragTime(getTimeFromPointer(e.clientX));
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    progressRef.current?.setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -163,8 +169,77 @@ export default function MiniPlayer() {
           >
             <SkipForward size={16} />
           </button>
+          <button
+            ref={queueBtnRef}
+            onClick={() => {
+              if (!showQueuePopup && queueBtnRef.current) {
+                const rect = queueBtnRef.current.getBoundingClientRect();
+                setPopupPos({
+                  right: window.innerWidth - rect.right,
+                  bottom: window.innerHeight - rect.top + 8,
+                });
+              }
+              setShowQueuePopup((v) => !v);
+            }}
+            className="clickable-pill w-8 h-8 rounded-full flex items-center justify-center text-soft hover:text-primary"
+            aria-label="待播放列表"
+            title="待播放列表"
+          >
+            <ListPlus size={16} />
+          </button>
         </div>
       </div>
+
+      {/* 待播放列表弹窗 */}
+      {showQueuePopup && (
+        <div
+          className="fixed w-72 z-50 card-surface p-3 shadow-2xl animate-fade-in"
+          style={{ right: popupPos.right, bottom: popupPos.bottom }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-outfit text-sm font-semibold text-primary">待播放列表</span>
+            <div className="flex items-center gap-2">
+              {queue.length > 0 && (
+                <button
+                  onClick={clearQueue}
+                  className="text-xs text-soft hover:text-red-500 transition-colors"
+                >
+                  清空
+                </button>
+              )}
+              <button
+                onClick={() => setShowQueuePopup(false)}
+                className="song-row-action"
+                style={{ width: "24px", height: "24px" }}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          {queue.length === 0 ? (
+            <p className="text-xs text-soft py-3 text-center">待播放列表为空</p>
+          ) : (
+            <div className="space-y-0.5 max-h-64 overflow-y-auto">
+              {queue.map((qs, i) => (
+                <div key={qs.id} className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-card-soft transition-colors">
+                  <span className="w-5 text-center text-xs font-dm text-faint flex-shrink-0">{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-outfit text-xs truncate">{qs.title}</p>
+                    <p className="font-dm text-[10px] text-soft truncate">{qs.artist}</p>
+                  </div>
+                  <button
+                    onClick={() => removeFromQueue(qs.id)}
+                    className="opacity-0 group-hover:opacity-100 text-faint hover:text-red-500 transition-all"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

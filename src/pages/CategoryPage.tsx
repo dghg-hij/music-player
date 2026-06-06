@@ -1,10 +1,11 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Loader2, Play, Shuffle } from "lucide-react";
+import { ArrowLeft, Loader2, Play, Shuffle, ListPlus } from "lucide-react";
 import { CATEGORIES, CATEGORY_KEYWORDS } from "../data/songs";
 import usePlayerStore from "../store/playerStore";
 import { searchSongs } from "../services/musicApi";
 import SongRow from "../components/SongRow";
+import BatchActions from "../components/BatchActions";
 import type { Song } from "../types";
 
 export default function CategoryPage() {
@@ -12,6 +13,7 @@ export default function CategoryPage() {
   const navigate = useNavigate();
   const songs = usePlayerStore((s) => s.songs);
   const playSong = usePlayerStore((s) => s.playSong);
+  const addToQueue = usePlayerStore((s) => s.addToQueue);
 
   const [remoteSongs, setRemoteSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(false);
@@ -166,12 +168,25 @@ export default function CategoryPage() {
               >
                 <Shuffle size={14} className="inline mr-1" /> 随机播放
               </button>
+              <button
+                onClick={() => list.forEach((s) => addToQueue(s))}
+                disabled={list.length === 0}
+                className="clickable-pill px-4 py-2 rounded-full text-sm font-dm text-primary disabled:opacity-50"
+                style={{
+                  background: "var(--card-soft)",
+                  border: "1px solid var(--border-strong)",
+                }}
+              >
+                <ListPlus size={14} className="inline mr-1" /> 加入待播放
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="card-surface p-2 md:p-4">
+      <div className="space-y-3">
+        {!loading && list.length > 0 && <BatchActions songs={list} />}
+        <div className="card-surface p-2 md:p-4">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--accent)" }} />
@@ -188,6 +203,7 @@ export default function CategoryPage() {
             ))}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

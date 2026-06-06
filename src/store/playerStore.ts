@@ -24,7 +24,10 @@ interface PlayerStore {
   showHotChart: boolean;
   theme: ThemeName;
   queue: Song[];
+  queues: Song[][];
+  activeQueueIndex: number;
   showQueue: boolean;
+  playTrigger: number;
 
   // 新增状态
   themeMode: ThemeMode;
@@ -57,7 +60,7 @@ interface PlayerStore {
   toggleFavorite: (index: number) => void;
   toggleFavoriteById: (id: number) => void;
   toggleShowFavorites: () => void;
-  fetchHotSongs: () => Promise<void>;
+  fetchHotSongs: (forceRefresh?: boolean) => Promise<void>;
   toggleShowHotChart: () => void;
   playHotSong: (song: Song) => void;
   setTheme: (theme: ThemeName) => void;
@@ -65,6 +68,7 @@ interface PlayerStore {
   removeFromQueue: (id: number) => void;
   clearQueue: () => void;
   playFromQueue: (id: number) => void;
+  setActiveQueueIndex: (index: number) => void;
   toggleShowQueue: () => void;
 
   // 新增 actions
@@ -83,6 +87,42 @@ interface PlayerStore {
   playSongById: (songId: number) => void;
 }
 
+const STORAGE_KEY = "music-player-state";
+
+function loadPersistedState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function persistState(state: Partial<PlayerStore>) {
+  try {
+    const data = {
+      favoriteIds: state.songs?.filter((s: Song) => s.isFavorite).map((s: Song) => s.id) ?? [],
+      downloads: state.downloads ?? [],
+      recentPlays: state.recentPlays ?? [],
+      playlists: state.playlists ?? [],
+      playMode: state.playMode ?? "sequential",
+      volume: state.volume ?? 80,
+      playbackRate: state.playbackRate ?? 1,
+      theme: state.theme ?? "purple",
+      themeMode: state.themeMode ?? "day",
+      dayTheme: state.dayTheme ?? "mint",
+      queues: state.queues ?? [[], [], []],
+      activeQueueIndex: state.activeQueueIndex ?? 0,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    // localStorage 满或不可用时静默失败
+  }
+}
+
+const persisted = loadPersistedState();
+
 let nextId = 1000;
 
 const initialSongs: Song[] = SONG_QUERIES.map((q, i) => ({
@@ -98,13 +138,20 @@ const initialSongs: Song[] = SONG_QUERIES.map((q, i) => ({
   categoryId: q.categoryId,
 }));
 
+if (persisted?.favoriteIds?.length) {
+  const favSet = new Set(persisted.favoriteIds);
+  initialSongs.forEach((s) => {
+    if (favSet.has(s.id)) s.isFavorite = true;
+  });
+}
+
 const usePlayerStore = create<PlayerStore>((set, get) => ({
   currentSongIndex: 0,
   isPlaying: false,
   currentTime: 0,
   duration: 0,
-  volume: 80,
-  playbackRate: 1,
+  volume: persisted?.volume ?? 80,
+  playbackRate: persisted?.playbackRate ?? 1,
   songs: initialSongs,
   isLoadingSongs: false,
   lyrics: [],
@@ -112,21 +159,24 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
   showLyrics: false,
   searchResults: [],
   isSearchMode: false,
-  playMode: "sequential",
+  playMode: persisted?.playMode ?? "sequential",
   showFavorites: false,
   hotSongs: [],
   isLoadingHot: false,
   showHotChart: false,
-  theme: "purple",
-  queue: [],
+  theme: persisted?.theme ?? "purple",
+  queue: persisted?.queues?.[persisted?.activeQueueIndex ?? 0] ?? [],
+  queues: persisted?.queues ?? [[], [], []],
+  activeQueueIndex: persisted?.activeQueueIndex ?? 0,
   showQueue: false,
+  playTrigger: 0,
 
   // 新增状态初始值
-  themeMode: "night",
-  dayTheme: "mint",
-  downloads: [],
-  recentPlays: [],
-  playlists: [],
+  themeMode: persisted?.themeMode ?? "day",
+  dayTheme: persisted?.dayTheme ?? "mint",
+  downloads: persisted?.downloads ?? [],
+  recentPlays: persisted?.recentPlays ?? [],
+  playlists: persisted?.playlists ?? [],
 
   setCurrentSongIndex: (index) => set({ currentSongIndex: index }),
   setIsPlaying: (playing) => set({ isPlaying: playing }),
@@ -158,30 +208,60 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
     }
   },
   playNext: () => {
-    const { songs, currentSongIndex, playMode, queue } = get();
+    const { songs, currentSongIndex, playMode, queues, activeQueueIndex, playTrigger } = get();
+    const queue = queues[activeQueueIndex];
 
+    // 单曲循环：重播当前歌曲
+    if (playMode === "loop") {
+      set({ isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1, playTrigger: playTrigger + 1 });
+      get().ensureSongSrc(currentSongIndex);
+      return;
+    }
+
+    // 待播放列表有歌曲时，优先从队列取
     if (queue.length > 0) {
-      const nextSong = queue[0];
-      const newQueue = queue.slice(1);
-      const existIndex = songs.findIndex((s) => s.id === nextSong.id);
-      if (existIndex >= 0) {
-        set({ currentSongIndex: existIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1, queue: newQueue });
-        get().ensureSongSrc(existIndex);
-        get().addToRecent(songs[existIndex].id);
+      let nextSong;
+      if (playMode === "shuffle") {
+        const randIdx = Math.floor(Math.random() * queue.length);
+        nextSong = queue[randIdx];
+        const newQueues = [...queues];
+        newQueues[activeQueueIndex] = queue.filter((_, i) => i !== randIdx);
+        const existIndex = songs.findIndex((s) => s.id === nextSong.id);
+        if (existIndex >= 0) {
+          set({ currentSongIndex: existIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1, queue: newQueues[activeQueueIndex], queues: newQueues, playTrigger: playTrigger + 1 });
+          get().ensureSongSrc(existIndex);
+          get().addToRecent(songs[existIndex].id);
+        } else {
+          const newSongs = [...songs, nextSong];
+          const newIndex = newSongs.length - 1;
+          set({ songs: newSongs, currentSongIndex: newIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1, queue: newQueues[activeQueueIndex], queues: newQueues, playTrigger: playTrigger + 1 });
+          get().ensureSongSrc(newIndex);
+          get().addToRecent(nextSong.id);
+        }
       } else {
-        const newSongs = [...songs, nextSong];
-        const newIndex = newSongs.length - 1;
-        set({ songs: newSongs, currentSongIndex: newIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1, queue: newQueue });
-        get().ensureSongSrc(newIndex);
-        get().addToRecent(nextSong.id);
+        // 顺序播放：取队列第一首
+        nextSong = queue[0];
+        const newQueues = [...queues];
+        newQueues[activeQueueIndex] = queue.slice(1);
+        const existIndex = songs.findIndex((s) => s.id === nextSong.id);
+        if (existIndex >= 0) {
+          set({ currentSongIndex: existIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1, queue: newQueues[activeQueueIndex], queues: newQueues, playTrigger: playTrigger + 1 });
+          get().ensureSongSrc(existIndex);
+          get().addToRecent(songs[existIndex].id);
+        } else {
+          const newSongs = [...songs, nextSong];
+          const newIndex = newSongs.length - 1;
+          set({ songs: newSongs, currentSongIndex: newIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1, queue: newQueues[activeQueueIndex], queues: newQueues, playTrigger: playTrigger + 1 });
+          get().ensureSongSrc(newIndex);
+          get().addToRecent(nextSong.id);
+        }
       }
       return;
     }
 
+    // 队列为空时，按歌曲列表播放
     let nextIndex: number;
-    if (playMode === "loop") {
-      nextIndex = currentSongIndex;
-    } else if (playMode === "shuffle") {
+    if (playMode === "shuffle") {
       if (songs.length <= 1) {
         nextIndex = 0;
       } else {
@@ -190,16 +270,17 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
         } while (nextIndex === currentSongIndex);
       }
     } else {
+      // 顺序播放：按歌曲列表顺序
       nextIndex = (currentSongIndex + 1) % songs.length;
     }
 
-    set({ currentSongIndex: nextIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
+    set({ currentSongIndex: nextIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1, playTrigger: playTrigger + 1 });
     get().ensureSongSrc(nextIndex);
     const nextSong = get().songs[nextIndex];
     if (nextSong) get().addToRecent(nextSong.id);
   },
   playPrev: () => {
-    const { songs, currentSongIndex, playMode } = get();
+    const { songs, currentSongIndex, playMode, playTrigger } = get();
 
     let prevIndex: number;
     if (playMode === "shuffle") {
@@ -214,7 +295,7 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
       prevIndex = (currentSongIndex - 1 + songs.length) % songs.length;
     }
 
-    set({ currentSongIndex: prevIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
+    set({ currentSongIndex: prevIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1, playTrigger: playTrigger + 1 });
     get().ensureSongSrc(prevIndex);
     const prevSong = get().songs[prevIndex];
     if (prevSong) get().addToRecent(prevSong.id);
@@ -237,6 +318,9 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
     // 并发请求，提高并发数加快加载
     const CONCURRENCY = 10;
     const newSongs: Song[] = [...initialSongs];
+    // 保留当前收藏状态
+    const currentSongs = get().songs;
+    const favIds = new Set(currentSongs.filter((s) => s.isFavorite).map((s) => s.id));
 
     for (let i = 0; i < queries.length; i += CONCURRENCY) {
       const batch = queries.slice(i, i + CONCURRENCY);
@@ -256,7 +340,7 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
                 duration: r.duration ? r.duration / 1000 : 0,
                 neteaseId: r.id,
                 isLoading: false,
-                isFavorite: false,
+                isFavorite: favIds.has(idx + 1) || currentSongs[idx]?.isFavorite || false,
                 categoryId: q.categoryId,
               } as Song;
             }
@@ -448,10 +532,10 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
   toggleShowFavorites: () => {
     set({ showFavorites: !get().showFavorites });
   },
-  fetchHotSongs: async () => {
+  fetchHotSongs: async (forceRefresh?: boolean) => {
     set({ isLoadingHot: true });
     try {
-      const results = await getHotSongs(20);
+      const results = await getHotSongs(20, !!forceRefresh);
       const hotSongs: Song[] = results.map((r, i) => ({
         id: 5000 + i,
         title: r.name,
@@ -495,32 +579,47 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
   },
   setTheme: (theme) => set({ theme }),
   addToQueue: (song: Song) => {
-    const { queue } = get();
+    const { queues, activeQueueIndex } = get();
+    const queue = queues[activeQueueIndex];
     if (queue.some((s) => s.id === song.id)) return;
-    const newSong: Song = { ...song, id: nextId++, src: "", isLoading: false, isFavorite: false };
-    set({ queue: [...queue, newSong] });
+    const newSong: Song = { ...song, src: "", isLoading: false, isFavorite: false };
+    const newQueues = [...queues];
+    newQueues[activeQueueIndex] = [...queue, newSong];
+    set({ queue: newQueues[activeQueueIndex], queues: newQueues });
   },
   removeFromQueue: (id: number) => {
-    set({ queue: get().queue.filter((s) => s.id !== id) });
+    const { queues, activeQueueIndex } = get();
+    const newQueues = [...queues];
+    newQueues[activeQueueIndex] = queues[activeQueueIndex].filter((s) => s.id !== id);
+    set({ queue: newQueues[activeQueueIndex], queues: newQueues });
   },
-  clearQueue: () => set({ queue: [] }),
+  clearQueue: () => {
+    const { queues, activeQueueIndex } = get();
+    const newQueues = [...queues];
+    newQueues[activeQueueIndex] = [];
+    set({ queue: [], queues: newQueues });
+  },
   playFromQueue: (id: number) => {
-    const { queue, songs } = get();
+    const { queues, activeQueueIndex, songs } = get();
+    const queue = queues[activeQueueIndex];
     const song = queue.find((s) => s.id === id);
     if (!song) return;
-    const newQueue = queue.filter((s) => s.id !== id);
     const existIndex = songs.findIndex((s) => s.id === song.id);
     if (existIndex >= 0) {
-      set({ currentSongIndex: existIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1, queue: newQueue });
+      set({ currentSongIndex: existIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
       get().ensureSongSrc(existIndex);
       get().addToRecent(songs[existIndex].id);
     } else {
       const newSongs = [...songs, song];
       const newIndex = newSongs.length - 1;
-      set({ songs: newSongs, currentSongIndex: newIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1, queue: newQueue });
+      set({ songs: newSongs, currentSongIndex: newIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
       get().ensureSongSrc(newIndex);
       get().addToRecent(song.id);
     }
+  },
+  setActiveQueueIndex: (index: number) => {
+    const { queues } = get();
+    set({ activeQueueIndex: index, queue: queues[index] });
   },
   toggleShowQueue: () => set({ showQueue: !get().showQueue }),
 
@@ -604,5 +703,15 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
 function songsListItem(songs: Song[], index: number) {
   return songs && songs[index] !== undefined;
 }
+
+// 订阅 store 变化，自动持久化（节流，避免 currentTime 等高频更新导致频繁写入）
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+usePlayerStore.subscribe((state) => {
+  if (persistTimer) return;
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    persistState(state);
+  }, 500);
+});
 
 export default usePlayerStore;

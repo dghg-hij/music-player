@@ -72,6 +72,7 @@ const SongRow = memo(function SongRow({
       playSong(song);
     }
     navigate("/play");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [onPlay, song, playSong, navigate]);
 
   useEffect(() => {
@@ -152,7 +153,7 @@ const SongRow = memo(function SongRow({
 
   return (
     <div
-      className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 cursor-pointer ${
+      className={`group relative flex items-center gap-2 px-2 py-2 rounded-xl text-left transition-all duration-200 cursor-pointer ${
         isCurrent ? "bg-card-soft" : "hover:bg-card-soft"
       }`}
       onClick={handlePlay}
@@ -182,19 +183,19 @@ const SongRow = memo(function SongRow({
         <img
           src={song.cover}
           alt=""
-          className="w-11 h-11 rounded-lg object-cover flex-shrink-0"
+          className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
         />
       ) : (
         <div
-          className="w-11 h-11 rounded-lg flex-shrink-0 flex items-center justify-center"
+          className="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center"
           style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-2))" }}
         >
-          <span className="text-white/60 text-base">♪</span>
+          <span className="text-white/60 text-sm">♪</span>
         </div>
       )}
 
       <div className="flex-1 min-w-0">
-        <p className={`font-outfit text-sm truncate ${isCurrent ? "text-primary font-semibold" : "text-primary"}`}>
+        <p className={`font-outfit text-sm font-semibold truncate ${isCurrent ? "text-primary" : "text-primary"}`}>
           {song.title}
         </p>
         <p className="font-dm text-xs text-soft truncate">{song.artist}</p>
@@ -205,54 +206,53 @@ const SongRow = memo(function SongRow({
       )}
 
       <div
-        className="flex items-center gap-1.5 flex-shrink-0 ml-auto pl-2 clickable-ring"
+        className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0 ml-auto pl-1"
         onClick={(e) => e.stopPropagation()}
-        style={{ borderRadius: "9999px", padding: "2px 6px" }}
       >
         <button
-          className="song-row-action hidden sm:inline-flex"
+          className="song-row-action inline-flex w-6 h-6 sm:w-7 sm:h-7"
           onClick={handleDownload}
           title={isDownloadedNow ? "已下载" : "下载"}
           aria-label={isDownloadedNow ? "已下载" : "下载"}
         >
-          {isDownloadedNow ? <Check size={14} /> : <Download size={14} />}
+          {isDownloadedNow ? <Check size={12} /> : <Download size={12} />}
         </button>
 
         <button
-          className={`song-row-action ${isFavorite ? "is-favorite" : ""}`}
+          className={`song-row-action inline-flex w-6 h-6 sm:w-7 sm:h-7 ${isFavorite ? "is-favorite" : ""}`}
           onClick={handleToggleFavorite}
           title={isFavorite ? "已喜欢" : "喜欢"}
           aria-label={isFavorite ? "取消喜欢" : "喜欢"}
         >
-          <Heart size={14} fill={isFavorite ? "currentColor" : "none"} />
+          <Heart size={12} fill={isFavorite ? "currentColor" : "none"} />
         </button>
 
         <button
-          className="song-row-action hidden sm:inline-flex"
+          className="song-row-action inline-flex w-6 h-6 sm:w-7 sm:h-7"
           onClick={handlePickPlaylist}
           title="加入歌单"
           aria-label="加入歌单"
         >
-          <Star size={14} />
+          <Star size={12} />
         </button>
 
         <button
-          className="song-row-action hidden md:inline-flex"
+          className="song-row-action inline-flex w-6 h-6 sm:w-7 sm:h-7"
           onClick={handleAddToQueue}
           title="加入播放列表"
           aria-label="加入播放列表"
         >
-          <ListPlus size={14} />
+          <ListPlus size={12} />
         </button>
 
         <button
-          className="song-row-action"
+          className="song-row-action inline-flex w-6 h-6 sm:w-7 sm:h-7"
           onClick={handlePlay}
           title="播放"
           aria-label="播放"
           style={{ color: "var(--accent)" }}
         >
-          <Play size={14} fill="currentColor" />
+          <Play size={12} fill="currentColor" />
         </button>
       </div>
 

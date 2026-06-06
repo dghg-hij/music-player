@@ -190,9 +190,9 @@ export interface HotSong {
 // 热歌榜使用网易云官方热歌榜
 const HOT_CHART_PLAYLIST_ID = "3778678";
 
-export async function getHotSongs(limit: number = 20): Promise<HotSong[]> {
+export async function getHotSongs(limit: number = 20, forceRefresh: boolean = false): Promise<HotSong[]> {
   // 先查缓存
-  const cached = getCachedChart(HOT_CHART_PLAYLIST_ID);
+  const cached = !forceRefresh && getCachedChart(HOT_CHART_PLAYLIST_ID);
   if (cached && cached.length > 0) {
     return cached.map((s, i) => ({
       ...s,

@@ -19,9 +19,10 @@ import {
   ListPlus,
   Check,
   ChevronDown,
+  X,
 } from "lucide-react";
 import usePlayerStore from "../store/playerStore";
-import useAudioPlayer from "../hooks/useAudioPlayer";
+import { audioControls } from "../hooks/useAudioPlayer";
 import Lyrics from "../components/Lyrics";
 import type { PlayMode } from "../types";
 
@@ -60,6 +61,13 @@ export default function PlayerPage() {
   const playlists = usePlayerStore((s) => s.playlists);
   const currentSong = usePlayerStore((s) => s.songs[s.currentSongIndex]);
   const songs = usePlayerStore((s) => s.songs);
+  const queue = usePlayerStore((s) => s.queue);
+  const queues = usePlayerStore((s) => s.queues);
+  const activeQueueIndex = usePlayerStore((s) => s.activeQueueIndex);
+  const setActiveQueueIndex = usePlayerStore((s) => s.setActiveQueueIndex);
+  const playFromQueue = usePlayerStore((s) => s.playFromQueue);
+  const removeFromQueue = usePlayerStore((s) => s.removeFromQueue);
+  const clearQueue = usePlayerStore((s) => s.clearQueue);
 
   const playNext = usePlayerStore((s) => s.playNext);
   const playPrev = usePlayerStore((s) => s.playPrev);
@@ -71,10 +79,11 @@ export default function PlayerPage() {
   const addSongToPlaylist = usePlayerStore((s) => s.addSongToPlaylist);
   const createPlaylist = usePlayerStore((s) => s.createPlaylist);
 
-  const { togglePlay, seek, changeVolume } = useAudioPlayer();
+  const { togglePlay, seek, changeVolume } = audioControls;
 
   const [showLyrics, setShowLyrics] = useState(false);
   const [showPlaylistPicker, setShowPlaylistPicker] = useState(false);
+  const [showQueuePopup, setShowQueuePopup] = useState(false);
   const [showCreateInput, setShowCreateInput] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [toast, setToast] = useState("");
@@ -96,7 +105,7 @@ export default function PlayerPage() {
     setIsDragging(true);
     const time = getTimeFromPointer(e.clientX);
     setDragTime(time);
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    progressRef.current?.setPointerCapture(e.pointerId);
   }, [getTimeFromPointer]);
 
   const handleProgressPointerMove = useCallback((e: React.PointerEvent) => {
@@ -151,11 +160,93 @@ export default function PlayerPage() {
         <div className="font-dm text-xs text-soft">
           正在播放 · {currentSongIndex + 1}/{validSongsCount}
         </div>
-        <div className="w-16" />
+        <div className="relative">
+          <button
+            onClick={() => setShowQueuePopup((v) => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-dm text-soft hover:text-primary transition-colors"
+          >
+            <ListPlus size={14} />
+            待播放{queue.length > 0 && <span className="ml-0.5 text-[10px]" style={{ color: "var(--accent)" }}>({queue.length})</span>}
+          </button>
+          {showQueuePopup && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setShowQueuePopup(false)} />
+              <div
+                className="absolute right-0 top-full mt-2 w-72 z-20 card-surface p-3 shadow-2xl animate-fade-in"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-outfit text-sm font-semibold text-primary">待播放列表</span>
+                  <div className="flex items-center gap-2">
+                    {queue.length > 0 && (
+                      <button
+                        onClick={() => { clearQueue(); }}
+                        className="text-xs text-soft hover:text-red-500 transition-colors"
+                      >
+                        清空
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowQueuePopup(false)}
+                      className="song-row-action"
+                      style={{ width: "24px", height: "24px" }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+                {/* 列表1/2/3切换标签 */}
+                <div className="flex gap-1 mb-2">
+                  {[0, 1, 2].map((idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveQueueIndex(idx)}
+                      className={`flex-1 px-2 py-1 rounded-md text-xs font-dm transition-all ${
+                        idx === activeQueueIndex
+                          ? "text-white"
+                          : "text-soft hover:text-primary"
+                      }`}
+                      style={
+                        idx === activeQueueIndex
+                          ? { background: "var(--accent)" }
+                          : { background: "var(--card-soft, rgba(255,255,255,0.06))" }
+                      }
+                    >
+                      列表{idx + 1}{queues[idx].length > 0 && <span className="ml-0.5">({queues[idx].length})</span>}
+                    </button>
+                  ))}
+                </div>
+                {queue.length === 0 ? (
+                  <p className="text-xs text-soft py-3 text-center">待播放列表为空</p>
+                ) : (
+                  <div className="space-y-0.5 max-h-64 overflow-y-auto">
+                    {queue.map((qs, i) => (
+                      <div key={qs.id} className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-card-soft transition-colors cursor-pointer"
+                        onClick={() => { playFromQueue(qs.id); setShowQueuePopup(false); }}
+                      >
+                        <span className="w-5 text-center text-xs font-dm text-faint flex-shrink-0">{i + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-outfit text-xs truncate">{qs.title}</p>
+                          <p className="font-dm text-[10px] text-soft truncate">{qs.artist}</p>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removeFromQueue(qs.id); }}
+                          className="opacity-0 group-hover:opacity-100 text-faint hover:text-red-500 transition-all"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* 主体区域：左侧播放器 + 右侧播放列表 */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 lg:gap-6">
+      {/* 主体区域：播放器 */}
+      <div className="flex-1">
         {/* 左侧：播放器主区域 */}
         <div
           className="relative rounded-3xl p-5 md:p-6 lg:p-8 flex flex-col"
@@ -347,6 +438,7 @@ export default function PlayerPage() {
               >
                 <ListPlus size={14} />
               </button>
+
             </div>
 
             {/* 歌单选择弹窗 */}
@@ -492,75 +584,6 @@ export default function PlayerPage() {
           </div>
         </div>
 
-        {/* 右侧：播放列表 */}
-        <div
-          className="rounded-3xl p-3 md:p-5 min-h-[300px]"
-          style={{
-            background: "var(--card)",
-            border: "1px solid var(--border)",
-          }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-outfit font-semibold text-lg text-primary">
-              播放列表
-            </h3>
-            <span className="font-dm text-xs text-soft">
-              {validSongsCount} 首
-            </span>
-          </div>
-          <div className="h-[320px] md:h-[420px] lg:h-[480px]">
-            <div className="space-y-0.5 overflow-y-auto h-full pr-1">
-              {songs.filter((s) => s.title).map((song, idx) => {
-                const realIndex = songs.indexOf(song);
-                return (
-                  <button
-                    key={song.id}
-                    onClick={() => usePlayerStore.getState().selectSong(realIndex)}
-                    className={`w-full flex items-center gap-2 md:gap-3 px-2 md:px-3 py-2 rounded-xl text-left transition-all duration-200 ${
-                      realIndex === currentSongIndex
-                        ? "clickable-ring"
-                        : "hover:bg-card-soft"
-                    }`}
-                    style={
-                      realIndex === currentSongIndex
-                        ? {
-                            background: "color-mix(in srgb, var(--accent) 18%, transparent)",
-                            color: "var(--accent)",
-                          }
-                        : undefined
-                    }
-                  >
-                    <span className="w-5 md:w-6 text-center text-xs font-dm flex-shrink-0">
-                      {realIndex === currentSongIndex && isPlaying ? "▶" : idx + 1}
-                    </span>
-                    <div
-                      className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0"
-                      style={{
-                        background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
-                      }}
-                    >
-                      {song.cover ? (
-                        <img
-                          src={song.cover}
-                          alt={song.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-xs text-white/50">♪</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-outfit text-sm truncate">{song.title}</p>
-                      <p className="font-dm text-xs text-soft truncate">{song.artist}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* 全屏歌词页面 */}

@@ -34,7 +34,7 @@ export default function HotChart() {
       <div className="flex flex-col items-center justify-center h-full gap-3">
         <p className="font-dm text-sm text-white/40">暂无排行数据</p>
         <button
-          onClick={fetchHotSongs}
+          onClick={() => fetchHotSongs()}
           className="px-4 py-2 rounded-xl bg-accent/20 text-accent text-sm font-dm hover:bg-accent/30 transition-colors"
         >
           重新加载
