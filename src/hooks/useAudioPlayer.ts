@@ -7,11 +7,9 @@ export interface AudioPlayerControls {
   changeVolume: (volume: number) => void;
 }
 
-// 全局单例 Audio 实例，确保整个应用只有一个
+// 全局单例 Audio 实例
 let audioInstance: HTMLAudioElement | null = null;
 let listenersAttached = false;
-// 记录当前正在播放的 src 字符串值（而非引用），避免因 songs 数组重建导致误判切歌
-let lastPlayedSrc = "";
 
 function getAudio(): HTMLAudioElement {
   if (!audioInstance) {
@@ -24,6 +22,7 @@ function getAudio(): HTMLAudioElement {
 export default function useAudioPlayer(): AudioPlayerControls {
   const rafIdRef = useRef<number>(0);
 
+  // 订阅 store 状态
   const currentSongIndex = usePlayerStore((s) => s.currentSongIndex);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const volume = usePlayerStore((s) => s.volume);
@@ -36,7 +35,12 @@ export default function useAudioPlayer(): AudioPlayerControls {
   const setDuration = usePlayerStore((s) => s.setDuration);
   const playNext = usePlayerStore((s) => s.playNext);
 
-  // 只在首次挂载时绑定事件监听（全局单例只绑一次）
+  // 追踪已加载的 src，避免重复加载
+  const loadedSrcRef = useRef("");
+  // 追踪当前应播放的 songIndex，用于判断是否需要重新加载
+  const loadedIndexRef = useRef(currentSongIndex);
+
+  // 1. 事件监听（只绑一次）
   useEffect(() => {
     if (listenersAttached) return;
     listenersAttached = true;
@@ -51,14 +55,17 @@ export default function useAudioPlayer(): AudioPlayerControls {
       playNext();
     };
 
+    const handleError = () => {
+      // 音频加载失败时，标记为未加载以便重试
+      loadedSrcRef.current = "";
+    };
+
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
     audio.addEventListener("ended", handleEnded);
-
-    // 注意：不在这里 cleanup，因为 Audio 是全局单例
-    // 事件监听在整个应用生命周期内保持
+    audio.addEventListener("error", handleError);
   }, [setDuration, playNext]);
 
-  // rAF 循环：只在 isPlaying 变化时启停
+  // 2. rAF 循环更新 currentTime
   useEffect(() => {
     const audio = getAudio();
 
@@ -78,62 +85,50 @@ export default function useAudioPlayer(): AudioPlayerControls {
     };
   }, [isPlaying, setCurrentTime]);
 
-  // 歌曲切换：只在 currentSongIndex 变化时处理
-  const prevIndexRef = useRef(currentSongIndex);
+  // 3. 核心逻辑：歌曲切换 + src 加载 + 播放控制
+  //    当 currentSongIndex 或 currentSongSrc 变化时，决定是否需要加载新音频
   useEffect(() => {
     const audio = getAudio();
-    const indexChanged = prevIndexRef.current !== currentSongIndex;
-    prevIndexRef.current = currentSongIndex;
+    const indexChanged = loadedIndexRef.current !== currentSongIndex;
+    const srcChanged = currentSongSrc !== loadedSrcRef.current;
 
+    // 歌曲索引变化 → 重置状态
     if (indexChanged) {
-      // 切歌时立即停止当前播放，防止重音
       audio.pause();
       audio.currentTime = 0;
-      lastPlayedSrc = "";
+      loadedSrcRef.current = "";
+      loadedIndexRef.current = currentSongIndex;
     }
 
-    // src 为空时不加载（等待异步加载完成）
-    if (!currentSongSrc) return;
-
-    // src 值和上次播放的一样，不需要重新加载
-    if (currentSongSrc === lastPlayedSrc) return;
-
-    // 加载新 src
-    lastPlayedSrc = currentSongSrc;
-    audio.src = currentSongSrc;
-    audio.volume = volume / 100;
-    audio.playbackRate = playbackRate;
-
-    if (isPlaying) {
-      audio.play().catch(() => {
-        setIsPlaying(false);
-      });
-    }
-  }, [currentSongIndex, currentSongSrc, isPlaying, volume, playbackRate, setIsPlaying]);
-
-  // 当 src 从空变为有值时（歌曲加载完成），自动开始播放
-  const prevSrcRef = useRef(currentSongSrc);
-  useEffect(() => {
-    const audio = getAudio();
-    // src 从空变为有值，且不是切歌场景（切歌由上面的 effect 处理）
-    if (currentSongSrc && !prevSrcRef.current && currentSongSrc !== lastPlayedSrc) {
-      lastPlayedSrc = currentSongSrc;
+    // 有新的 src 需要加载
+    if (currentSongSrc && srcChanged) {
+      loadedSrcRef.current = currentSongSrc;
       audio.src = currentSongSrc;
       audio.volume = volume / 100;
       audio.playbackRate = playbackRate;
+
       if (isPlaying) {
         audio.play().catch(() => {
           setIsPlaying(false);
         });
       }
+      return;
     }
-    prevSrcRef.current = currentSongSrc;
-  }, [currentSongSrc, isPlaying, volume, playbackRate, setIsPlaying]);
 
-  // 播放/暂停控制（仅在 isPlaying 状态变化时触发，不与切歌逻辑冲突）
+    // 歌曲切换了但 src 还没加载好（等待 ensureSongSrc 完成）
+    // 不做任何操作，等 src 变化后上面的分支会处理
+  }, [currentSongIndex, currentSongSrc, isPlaying, volume, playbackRate, setIsPlaying]);
+
+  // 4. 播放/暂停控制（仅在 isPlaying 变化且音频已加载时触发）
+  const prevIsPlayingRef = useRef(isPlaying);
   useEffect(() => {
+    // 跳过首次渲染和切歌时的 isPlaying 变化（由 effect 3 处理）
+    if (prevIsPlayingRef.current === isPlaying) return;
+    prevIsPlayingRef.current = isPlaying;
+
     const audio = getAudio();
-    if (!audio.src || !lastPlayedSrc) return;
+    // 只有音频已加载时才控制播放/暂停
+    if (!loadedSrcRef.current) return;
 
     if (isPlaying) {
       audio.play().catch(() => {
@@ -144,17 +139,17 @@ export default function useAudioPlayer(): AudioPlayerControls {
     }
   }, [isPlaying, setIsPlaying]);
 
-  // 音量控制
+  // 5. 音量控制
   useEffect(() => {
     getAudio().volume = volume / 100;
   }, [volume]);
 
-  // 倍速控制
+  // 6. 倍速控制
   useEffect(() => {
     getAudio().playbackRate = playbackRate;
   }, [playbackRate]);
 
-  // 预加载下一首歌曲的音源
+  // 7. 预加载下一首歌曲的音源
   useEffect(() => {
     const state = usePlayerStore.getState();
     const nextIndex = currentSongIndex + 1;
@@ -166,7 +161,7 @@ export default function useAudioPlayer(): AudioPlayerControls {
     }
   }, [currentSongIndex]);
 
-  // 当前歌曲 src 为空且未在加载时，触发加载
+  // 8. 当前歌曲 src 为空且未在加载时，触发加载
   useEffect(() => {
     if (!currentSongSrc && !currentSongLoading) {
       const state = usePlayerStore.getState();

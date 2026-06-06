@@ -167,11 +167,13 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
       if (existIndex >= 0) {
         set({ currentSongIndex: existIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1, queue: newQueue });
         get().ensureSongSrc(existIndex);
+        get().addToRecent(songs[existIndex].id);
       } else {
         const newSongs = [...songs, nextSong];
         const newIndex = newSongs.length - 1;
         set({ songs: newSongs, currentSongIndex: newIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1, queue: newQueue });
         get().ensureSongSrc(newIndex);
+        get().addToRecent(nextSong.id);
       }
       return;
     }
@@ -194,7 +196,7 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
     set({ currentSongIndex: nextIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
     get().ensureSongSrc(nextIndex);
     const nextSong = get().songs[nextIndex];
-    if (nextSong?.neteaseId) get().fetchLyrics(nextSong.neteaseId);
+    if (nextSong) get().addToRecent(nextSong.id);
   },
   playPrev: () => {
     const { songs, currentSongIndex, playMode } = get();
@@ -215,7 +217,7 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
     set({ currentSongIndex: prevIndex, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
     get().ensureSongSrc(prevIndex);
     const prevSong = get().songs[prevIndex];
-    if (prevSong?.neteaseId) get().fetchLyrics(prevSong.neteaseId);
+    if (prevSong) get().addToRecent(prevSong.id);
   },
   selectSong: (index) => {
     set({ currentSongIndex: index, isPlaying: true, currentTime: 0, lyrics: [], currentLyricIndex: -1 });
@@ -232,8 +234,8 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
     set({ isLoadingSongs: true });
     const queries = SONG_QUERIES;
 
-    // 并发请求，限制最多 5 个同时进行
-    const CONCURRENCY = 5;
+    // 并发请求，提高并发数加快加载
+    const CONCURRENCY = 10;
     const newSongs: Song[] = [...initialSongs];
 
     for (let i = 0; i < queries.length; i += CONCURRENCY) {
@@ -280,7 +282,7 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
     if (!song || song.src || song.isLoading) return;
     if (!song.neteaseId) return;
 
-    // 精确更新单首歌曲，避免复制整个数组
+    // 精确更新单首歌曲
     set((state) => {
       const updated = [...state.songs];
       updated[index] = { ...updated[index], isLoading: true };
@@ -289,19 +291,36 @@ const usePlayerStore = create<PlayerStore>((set, get) => ({
 
     try {
       const url = await getSongUrl(song.neteaseId);
-      set((state) => {
-        const updated = [...state.songs];
-        updated[index] = { ...updated[index], src: url || "", isLoading: false };
-        return { songs: updated };
-      });
+      if (url) {
+        set((state) => {
+          const updated = [...state.songs];
+          // 只有当这首歌仍然是当前需要加载的歌时才更新 src
+          if (updated[index]?.neteaseId === song.neteaseId) {
+            updated[index] = { ...updated[index], src: url, isLoading: false };
+          }
+          return { songs: updated };
+        });
+      } else {
+        // API 返回空 URL，标记加载完成但 src 为空，允许重试
+        set((state) => {
+          const updated = [...state.songs];
+          if (updated[index]?.neteaseId === song.neteaseId) {
+            updated[index] = { ...updated[index], isLoading: false };
+          }
+          return { songs: updated };
+        });
+      }
     } catch {
       set((state) => {
         const updated = [...state.songs];
-        updated[index] = { ...updated[index], isLoading: false };
+        if (updated[index]?.neteaseId === song.neteaseId) {
+          updated[index] = { ...updated[index], isLoading: false };
+        }
         return { songs: updated };
       });
     }
 
+    // ensureSongSrc 统一负责获取歌词
     if (song.neteaseId) {
       get().fetchLyrics(song.neteaseId);
     }

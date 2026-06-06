@@ -6,19 +6,19 @@ export default async function handler(req, res) {
 
   if (type) params.push("type=" + type);
   if (s) params.push("s=" + encodeURIComponent(s));
+  // 支持 id 和 playlist_id 两种参数名
   if (id) params.push("id=" + id);
+  else if (playlist_id) params.push("id=" + playlist_id);
   if (limit) params.push("limit=" + limit);
   if (level) params.push("level=" + level);
 
-  // 榜单接口：使用网易云歌单详情
-  if (type === "playlist" && playlist_id) {
-    url = `https://api.bugpk.com/api/163_music?type=playlist&id=${playlist_id}`;
-  } else {
-    url += params.join("&");
-  }
+  url += params.join("&");
 
   try {
-    const response = await fetch(url);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
     const data = await response.json();
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate");

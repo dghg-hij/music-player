@@ -127,6 +127,7 @@ function RankingCard({
 export default function HomePage() {
   const songs = usePlayerStore((s) => s.songs);
   const hotSongs = usePlayerStore((s) => s.hotSongs);
+  const isLoadingHot = usePlayerStore((s) => s.isLoadingHot);
   const fetchHotSongs = usePlayerStore((s) => s.fetchHotSongs);
 
   const previewFor = (ids: string[]) => {
@@ -271,14 +272,30 @@ export default function HomePage() {
           </button>
         </div>
         <div className="card-surface p-2 md:p-4">
-          {hotSongs.length === 0 ? (
+          {isLoadingHot && hotSongs.length === 0 ? (
+            <div className="text-center py-12">
+              <Flame
+                size={36}
+                className="mx-auto text-faint mb-3 animate-pulse"
+                style={{ color: "var(--accent-2)" }}
+              />
+              <p className="font-dm text-sm text-soft">正在为你加载热门歌曲...</p>
+            </div>
+          ) : hotSongs.length === 0 ? (
             <div className="text-center py-12">
               <Flame
                 size={36}
                 className="mx-auto text-faint mb-3"
                 style={{ color: "var(--accent-2)" }}
               />
-              <p className="font-dm text-sm text-soft">正在为你加载热门歌曲...</p>
+              <p className="font-dm text-sm text-soft mb-3">热门歌曲加载失败</p>
+              <button
+                onClick={fetchHotSongs}
+                className="px-4 py-2 rounded-full text-sm font-dm text-white"
+                style={{ background: "var(--accent)" }}
+              >
+                重新加载
+              </button>
             </div>
           ) : (
             <div className="space-y-1">

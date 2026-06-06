@@ -20,9 +20,13 @@ export async function searchSongs(
   limit: number = 1
 ): Promise<SearchResult[]> {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
     const res = await fetch(
-      `${API_BASE}?type=search&s=${encodeURIComponent(keyword)}&limit=${limit}`
+      `${API_BASE}?type=search&s=${encodeURIComponent(keyword)}&limit=${limit}`,
+      { signal: controller.signal }
     );
+    clearTimeout(timeoutId);
     if (!res.ok) return [];
     const json = await res.json();
     if (json.code === 200 && json.data?.songs) {
@@ -42,9 +46,13 @@ export async function getSongUrl(id: number): Promise<string | null> {
   }
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
     const res = await fetch(
-      `${API_BASE}?type=url&id=${id}&level=exhigh`
+      `${API_BASE}?type=url&id=${id}&level=exhigh`,
+      { signal: controller.signal }
     );
+    clearTimeout(timeoutId);
     if (!res.ok) return null;
     const json = await res.json();
     if (json.code === 200 && json.data?.[0]?.url) {
@@ -61,9 +69,13 @@ export async function getSongUrl(id: number): Promise<string | null> {
 
 export async function getSongLyric(id: number): Promise<string> {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
     const res = await fetch(
-      `${API_BASE}?type=lyric&id=${id}`
+      `${API_BASE}?type=lyric&id=${id}`,
+      { signal: controller.signal }
     );
+    clearTimeout(timeoutId);
     if (!res.ok) return "";
     const json = await res.json();
     if (json.code === 200 && json.data?.lrc) {
@@ -114,15 +126,37 @@ function setCachedChart(playlistId: string, songs: ChartSong[]): void {
   }
 }
 
-export async function getChartSongs(playlistId: string, limit: number = 20): Promise<ChartSong[]> {
+export async function getChartSongs(playlistId: string, limit: number = 20, keyword?: string): Promise<ChartSong[]> {
   // 先查缓存
   const cached = getCachedChart(playlistId);
   if (cached && cached.length > 0) return cached;
 
   try {
+    // playlist API 经常超时，优先使用 search API
+    if (keyword) {
+      const results = await searchSongs(keyword, limit);
+      if (results.length > 0) {
+        const songs: ChartSong[] = results.map((s) => ({
+          id: s.id,
+          name: s.name,
+          artists: s.artists,
+          album: s.album,
+          picUrl: s.picUrl,
+          duration: s.duration,
+        }));
+        if (songs.length > 0) setCachedChart(playlistId, songs);
+        return songs;
+      }
+    }
+
+    // 回退到 playlist API（带超时）
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(
-      `${API_BASE}?type=playlist&playlist_id=${playlistId}`
+      `${API_BASE}?type=playlist&id=${playlistId}`,
+      { signal: controller.signal }
     );
+    clearTimeout(timeoutId);
     if (!res.ok) return [];
     const json = await res.json();
     if (json.code === 200 && json.data?.songs) {
@@ -134,7 +168,6 @@ export async function getChartSongs(playlistId: string, limit: number = 20): Pro
         picUrl: s.picUrl,
         duration: s.duration,
       }));
-      // 写入缓存
       if (songs.length > 0) setCachedChart(playlistId, songs);
       return songs;
     }
@@ -168,9 +201,33 @@ export async function getHotSongs(limit: number = 20): Promise<HotSong[]> {
   }
 
   try {
+    // 优先使用 search API（playlist API 经常超时）
+    const results = await searchSongs("热门歌曲", limit);
+    if (results.length > 0) {
+      const songs: HotSong[] = results.map((s, i) => ({
+        id: s.id,
+        name: s.name,
+        artists: s.artists,
+        album: s.album,
+        picUrl: s.picUrl,
+        duration: s.duration,
+        heat: Math.floor(1000000 - i * 40000 + Math.random() * 10000),
+      }));
+      const chartSongs: ChartSong[] = results.map((s) => ({
+        id: s.id, name: s.name, artists: s.artists, album: s.album, picUrl: s.picUrl, duration: s.duration,
+      }));
+      if (chartSongs.length > 0) setCachedChart(HOT_CHART_PLAYLIST_ID, chartSongs);
+      return songs;
+    }
+
+    // 回退到 playlist API（带超时）
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(
-      `${API_BASE}?type=playlist&playlist_id=${HOT_CHART_PLAYLIST_ID}`
+      `${API_BASE}?type=playlist&id=${HOT_CHART_PLAYLIST_ID}`,
+      { signal: controller.signal }
     );
+    clearTimeout(timeoutId);
     if (!res.ok) return [];
     const json = await res.json();
     if (json.code === 200 && json.data?.songs) {
@@ -183,8 +240,9 @@ export async function getHotSongs(limit: number = 20): Promise<HotSong[]> {
         duration: s.duration,
         heat: Math.floor(1000000 - i * 40000 + Math.random() * 10000),
       }));
-      // 写入缓存
-      const chartSongs: ChartSong[] = songs.map(({ heat, ...rest }) => rest);
+      const chartSongs: ChartSong[] = json.data.songs.slice(0, limit).map((s: SearchResult) => ({
+        id: s.id, name: s.name, artists: s.artists, album: s.album, picUrl: s.picUrl, duration: s.duration,
+      }));
       if (chartSongs.length > 0) setCachedChart(HOT_CHART_PLAYLIST_ID, chartSongs);
       return songs;
     }
@@ -204,7 +262,17 @@ export function parseLRC(lrc: string): LyricLine[] {
   const result: LyricLine[] = [];
   const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
 
+  // 解析 offset
+  let offsetMs = 0;
+  const offsetMatch = lrc.match(/\[offset:(-?\d+)\]/);
+  if (offsetMatch) {
+    offsetMs = parseInt(offsetMatch[1], 10);
+  }
+
   for (const line of lines) {
+    // 跳过纯元数据行 [ti:xxx] [ar:xxx] [al:xxx] [by:xxx] [offset:xxx]
+    if (/^\[(ti|ar|al|by|offset):/.test(line.trim())) continue;
+
     const times: number[] = [];
     let match: RegExpExecArray | null;
 
@@ -213,18 +281,26 @@ export function parseLRC(lrc: string): LyricLine[] {
       const min = parseInt(match[1], 10);
       const sec = parseInt(match[2], 10);
       const ms = match[3].length === 3 ? parseInt(match[3], 10) : parseInt(match[3], 10) * 10;
-      times.push(min * 60 + sec + ms / 1000);
+      times.push(min * 60 + sec + ms / 1000 + offsetMs / 1000);
     }
 
     const text = line.replace(/\[\d{2}:\d{2}\.\d{2,3}\]/g, "").trim();
 
     if (times.length > 0 && text) {
       for (const time of times) {
-        result.push({ time, text });
+        result.push({ time: Math.max(0, time), text });
       }
     }
   }
 
   result.sort((a, b) => a.time - b.time);
+
+  // 去重：相同时间只保留最后一条
+  for (let i = result.length - 1; i > 0; i--) {
+    if (Math.abs(result[i].time - result[i - 1].time) < 0.01) {
+      result.splice(i - 1, 1);
+    }
+  }
+
   return result;
 }

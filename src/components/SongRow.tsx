@@ -210,7 +210,7 @@ const SongRow = memo(function SongRow({
         style={{ borderRadius: "9999px", padding: "2px 6px" }}
       >
         <button
-          className="song-row-action"
+          className="song-row-action hidden sm:inline-flex"
           onClick={handleDownload}
           title={isDownloadedNow ? "已下载" : "下载"}
           aria-label={isDownloadedNow ? "已下载" : "下载"}
@@ -228,7 +228,7 @@ const SongRow = memo(function SongRow({
         </button>
 
         <button
-          className="song-row-action"
+          className="song-row-action hidden sm:inline-flex"
           onClick={handlePickPlaylist}
           title="加入歌单"
           aria-label="加入歌单"
@@ -237,7 +237,7 @@ const SongRow = memo(function SongRow({
         </button>
 
         <button
-          className="song-row-action"
+          className="song-row-action hidden md:inline-flex"
           onClick={handleAddToQueue}
           title="加入播放列表"
           aria-label="加入播放列表"

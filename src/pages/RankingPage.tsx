@@ -24,7 +24,7 @@ export default function RankingPage() {
     setSongs([]);
     (async () => {
       try {
-        const results = await getChartSongs(ranking.playlistId, 20);
+        const results = await getChartSongs(ranking.playlistId, 20, ranking.query);
         if (cancelled) return;
         const list: Song[] = results.map((r, i) => ({
           id: 6000 + i,

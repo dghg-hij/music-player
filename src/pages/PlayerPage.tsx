@@ -13,12 +13,12 @@ import {
   Volume2,
   VolumeX,
   Mic2,
-  ListMusic,
   Loader2,
   Download,
   Star,
   ListPlus,
   Check,
+  ChevronDown,
 } from "lucide-react";
 import usePlayerStore from "../store/playerStore";
 import useAudioPlayer from "../hooks/useAudioPlayer";
@@ -59,7 +59,7 @@ export default function PlayerPage() {
   const downloads = usePlayerStore((s) => s.downloads);
   const playlists = usePlayerStore((s) => s.playlists);
   const currentSong = usePlayerStore((s) => s.songs[s.currentSongIndex]);
-  const songsCount = usePlayerStore((s) => s.songs.filter((s2) => s2.title).length);
+  const songs = usePlayerStore((s) => s.songs);
 
   const playNext = usePlayerStore((s) => s.playNext);
   const playPrev = usePlayerStore((s) => s.playPrev);
@@ -82,7 +82,7 @@ export default function PlayerPage() {
   const [dragTime, setDragTime] = useState(0);
   const progressRef = useRef<HTMLDivElement>(null);
 
-  const songs = usePlayerStore((s) => s.songs);
+  const validSongsCount = songs.filter((s) => s.title).length;
 
   const getTimeFromPointer = useCallback((clientX: number) => {
     if (!progressRef.current || duration <= 0) return 0;
@@ -126,7 +126,7 @@ export default function PlayerPage() {
         <p className="font-dm text-soft">还没有选歌，去首页挑一首吧</p>
         <button
           onClick={() => navigate("/")}
-          className="clickable-pill px-4 py-2 rounded-full text-sm font-dm text-white"
+          className="px-4 py-2 rounded-full text-sm font-dm text-white transition-transform active:scale-95"
           style={{ background: "var(--accent)" }}
         >
           返回首页
@@ -140,36 +140,42 @@ export default function PlayerPage() {
 
   return (
     <div className="min-h-[calc(100vh-9rem)] flex flex-col">
+      {/* 顶部导航栏 */}
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => navigate(-1)}
-          className="clickable-pill flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-dm text-soft hover:text-primary transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-dm text-soft hover:text-primary transition-colors"
         >
           <ArrowLeft size={14} /> 返回
         </button>
         <div className="font-dm text-xs text-soft">
-          正在播放 · {currentSongIndex + 1}/{songs.filter((s) => s.title).length}
+          正在播放 · {currentSongIndex + 1}/{validSongsCount}
         </div>
         <div className="w-16" />
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+      {/* 主体区域：左侧播放器 + 右侧播放列表 */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 lg:gap-6">
+        {/* 左侧：播放器主区域 */}
         <div
-          className="relative rounded-3xl p-6 md:p-8 flex flex-col"
+          className="relative rounded-3xl p-5 md:p-6 lg:p-8 flex flex-col"
           style={{
             background: "var(--card)",
             border: "1px solid var(--border)",
           }}
         >
+          {/* 背景渐变装饰 */}
           <div
             className="absolute inset-0 rounded-3xl opacity-20 pointer-events-none overflow-hidden"
             style={{
               background: "linear-gradient(135deg, var(--accent), transparent 60%)",
             }}
           />
-          <div className="relative flex-1 flex flex-col items-center justify-center gap-6 min-h-[400px]">
+
+          <div className="relative flex-1 flex flex-col items-center justify-center gap-5 md:gap-6 min-h-[320px] md:min-h-[400px]">
+            {/* 封面图 */}
             <div
-              className="relative w-64 h-64 md:w-80 md:h-80 rounded-3xl overflow-hidden"
+              className="relative w-48 h-48 md:w-64 md:h-64 lg:w-72 lg:h-72 rounded-3xl overflow-hidden flex-shrink-0"
               style={{
                 boxShadow: `0 0 60px -4px var(--accent), 0 0 120px -8px var(--accent-2)`,
               }}
@@ -203,11 +209,12 @@ export default function PlayerPage() {
               )}
             </div>
 
+            {/* 歌曲信息 */}
             <div className="text-center max-w-md">
-              <h1 className="font-outfit font-bold text-2xl md:text-3xl text-primary leading-tight">
+              <h1 className="font-outfit font-bold text-2xl md:text-3xl text-primary leading-tight truncate">
                 {currentSong.title}
               </h1>
-              <p className="font-dm text-sm text-soft mt-2">
+              <p className="font-dm text-sm text-soft mt-1.5 truncate">
                 {currentSong.artist}
               </p>
               {currentSong.isLoading && (
@@ -218,28 +225,27 @@ export default function PlayerPage() {
               )}
             </div>
 
-            <div className="w-full max-w-md space-y-2">
-              <div className="relative">
+            {/* 进度条 */}
+            <div className="w-full max-w-md space-y-1.5">
+              <div
+                ref={progressRef}
+                className="h-2 rounded-full cursor-pointer group/progress"
+                style={{ background: "var(--range-track)" }}
+                onPointerDown={handleProgressPointerDown}
+                onPointerMove={handleProgressPointerMove}
+                onPointerUp={handleProgressPointerUp}
+              >
                 <div
-                  ref={progressRef}
-                  className="h-2 rounded-full cursor-pointer group/progress"
-                  style={{ background: "var(--range-track)" }}
-                  onPointerDown={handleProgressPointerDown}
-                  onPointerMove={handleProgressPointerMove}
-                  onPointerUp={handleProgressPointerUp}
+                  className="h-full rounded-full relative"
+                  style={{
+                    width: `${duration > 0 ? (displayTime / duration) * 100 : 0}%`,
+                    background: "linear-gradient(90deg, var(--accent), var(--accent-2))",
+                  }}
                 >
                   <div
-                    className="h-full rounded-full relative"
-                    style={{
-                      width: `${duration > 0 ? (displayTime / duration) * 100 : 0}%`,
-                      background: "linear-gradient(90deg, var(--accent), var(--accent-2))",
-                    }}
-                  >
-                    <div
-                      className="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-white shadow-lg opacity-0 group-hover/progress:opacity-100 transition-opacity"
-                      style={{ boxShadow: "0 0 8px var(--accent)" }}
-                    />
-                  </div>
+                    className="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-white shadow-lg opacity-0 group-hover/progress:opacity-100 transition-opacity"
+                    style={{ boxShadow: "0 0 8px var(--accent)" }}
+                  />
                 </div>
               </div>
               <div className="flex items-center justify-between text-xs font-dm text-soft">
@@ -248,24 +254,25 @@ export default function PlayerPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            {/* 播放控制按钮 */}
+            <div className="flex items-center gap-3">
               <button
                 onClick={togglePlayMode}
-                className="clickable-pill w-10 h-10 rounded-full flex items-center justify-center text-soft hover:text-primary"
+                className="w-10 h-10 rounded-full flex items-center justify-center text-soft hover:text-primary transition-colors"
                 title={PlayModeLabel({ mode: playMode })}
               >
                 <PlayModeIcon mode={playMode} />
               </button>
               <button
                 onClick={playPrev}
-                className="clickable-pill w-12 h-12 rounded-full flex items-center justify-center text-primary hover:bg-card-soft"
+                className="w-12 h-12 rounded-full flex items-center justify-center text-primary hover:bg-card-soft transition-colors"
                 aria-label="上一首"
               >
                 <SkipBack size={22} strokeWidth={2} />
               </button>
               <button
                 onClick={togglePlay}
-                className="w-16 h-16 rounded-full flex items-center justify-center text-white transition-transform active:scale-95 clickable-pill"
+                className="w-16 h-16 rounded-full flex items-center justify-center text-white transition-transform active:scale-95"
                 style={{
                   background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
                   boxShadow: "0 0 30px -4px var(--accent)",
@@ -280,22 +287,24 @@ export default function PlayerPage() {
               </button>
               <button
                 onClick={playNext}
-                className="clickable-pill w-12 h-12 rounded-full flex items-center justify-center text-primary hover:bg-card-soft"
+                className="w-12 h-12 rounded-full flex items-center justify-center text-primary hover:bg-card-soft transition-colors"
                 aria-label="下一首"
               >
                 <SkipForward size={22} strokeWidth={2} />
               </button>
+              {/* 歌词按钮：点击打开全屏歌词页面 */}
               <button
-                onClick={() => setShowLyrics((v) => !v)}
-                className="clickable-pill w-10 h-10 rounded-full flex items-center justify-center text-soft hover:text-primary"
-                aria-label="切换歌词"
-                title="切换歌词"
+                onClick={() => setShowLyrics(true)}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-soft hover:text-primary transition-colors"
+                aria-label="歌词"
+                title="歌词"
               >
-                {showLyrics ? <ListMusic size={18} /> : <Mic2 size={18} />}
+                <Mic2 size={18} />
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+            {/* 操作按钮行 */}
+            <div className="flex items-center justify-center gap-2">
               <button
                 onClick={() => {
                   if (isDownloaded) {
@@ -340,6 +349,7 @@ export default function PlayerPage() {
               </button>
             </div>
 
+            {/* 歌单选择弹窗 */}
             {showPlaylistPicker && (
               <div
                 className="absolute bottom-2 right-2 w-72 z-20 card-surface p-3 shadow-2xl animate-fade-in"
@@ -377,13 +387,13 @@ export default function PlayerPage() {
                         }`}
                       >
                         <span
-                          className="w-7 h-7 rounded-md flex items-center justify-center text-xs"
+                          className="w-7 h-7 rounded-md flex items-center justify-center text-xs text-white"
                           style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-2))" }}
                         >
                           ♪
                         </span>
                         <span className="flex-1 truncate font-dm">{pl.name}</span>
-                        {contains && <Check size={12} className="text-accent" />}
+                        {contains && <Check size={12} style={{ color: "var(--accent)" }} />}
                       </button>
                     );
                   })}
@@ -441,22 +451,25 @@ export default function PlayerPage() {
             )}
           </div>
 
-          <div className="relative flex items-center gap-2 mt-4 pt-4 border-t border-default">
-            {volume === 0 ? (
-              <VolumeX size={18} className="text-soft" />
-            ) : (
-              <Volume2 size={18} className="text-soft" />
-            )}
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={volume}
-              onChange={(e) => changeVolume(parseInt(e.target.value, 10))}
-              className="flex-1"
-            />
-            <span className="font-dm text-xs text-soft w-10 text-right">{volume}</span>
-            <div className="ml-3 flex items-center gap-1 pl-3 border-l border-default">
+          {/* 底部：音量 + 倍速控制 */}
+          <div className="relative flex flex-wrap items-center gap-x-4 gap-y-2 mt-4 pt-4 border-t border-default">
+            <div className="flex items-center gap-2 flex-1 min-w-[160px]">
+              {volume === 0 ? (
+                <VolumeX size={16} className="text-soft flex-shrink-0" />
+              ) : (
+                <Volume2 size={16} className="text-soft flex-shrink-0" />
+              )}
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={volume}
+                onChange={(e) => changeVolume(parseInt(e.target.value, 10))}
+                className="flex-1"
+              />
+              <span className="font-dm text-xs text-soft w-8 text-right">{volume}</span>
+            </div>
+            <div className="flex items-center gap-1">
               {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
                 <button
                   key={rate}
@@ -479,8 +492,9 @@ export default function PlayerPage() {
           </div>
         </div>
 
+        {/* 右侧：播放列表 */}
         <div
-          className="rounded-3xl p-4 md:p-6 min-h-[300px]"
+          className="rounded-3xl p-3 md:p-5 min-h-[300px]"
           style={{
             background: "var(--card)",
             border: "1px solid var(--border)",
@@ -488,24 +502,21 @@ export default function PlayerPage() {
         >
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-outfit font-semibold text-lg text-primary">
-              {showLyrics ? "歌词" : "播放列表"}
+              播放列表
             </h3>
             <span className="font-dm text-xs text-soft">
-              {showLyrics ? `${lyrics.length} 行` : `${songs.filter((s) => s.title).length} 首`}
+              {validSongsCount} 首
             </span>
           </div>
-          <div className="h-[420px] lg:h-[480px]">
-            {showLyrics ? (
-              <Lyrics lyrics={lyrics} currentLyricIndex={currentLyricIndex} />
-            ) : (
-              <div className="space-y-1 overflow-y-auto h-full pr-1">
-                {songs.filter((s) => s.title).map((song, idx) => {
-                  const realIndex = songs.indexOf(song);
-                  return (
+          <div className="h-[320px] md:h-[420px] lg:h-[480px]">
+            <div className="space-y-0.5 overflow-y-auto h-full pr-1">
+              {songs.filter((s) => s.title).map((song, idx) => {
+                const realIndex = songs.indexOf(song);
+                return (
                   <button
                     key={song.id}
                     onClick={() => usePlayerStore.getState().selectSong(realIndex)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-all duration-200 ${
+                    className={`w-full flex items-center gap-2 md:gap-3 px-2 md:px-3 py-2 rounded-xl text-left transition-all duration-200 ${
                       realIndex === currentSongIndex
                         ? "clickable-ring"
                         : "hover:bg-card-soft"
@@ -519,21 +530,141 @@ export default function PlayerPage() {
                         : undefined
                     }
                   >
-                    <span className="w-6 text-center text-xs font-dm">
+                    <span className="w-5 md:w-6 text-center text-xs font-dm flex-shrink-0">
                       {realIndex === currentSongIndex && isPlaying ? "▶" : idx + 1}
                     </span>
+                    <div
+                      className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0"
+                      style={{
+                        background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
+                      }}
+                    >
+                      {song.cover ? (
+                        <img
+                          src={song.cover}
+                          alt={song.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-xs text-white/50">♪</span>
+                        </div>
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-outfit text-sm truncate">{song.title}</p>
                       <p className="font-dm text-xs text-soft truncate">{song.artist}</p>
                     </div>
                   </button>
-                  );
-                })}
-              </div>
-            )}
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* 全屏歌词页面 */}
+      {showLyrics && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col animate-fade-in"
+          style={{ background: "var(--card)" }}
+        >
+          {/* 顶部栏 */}
+          <div className="flex items-center justify-between px-4 pt-4 pb-2">
+            <button
+              onClick={() => setShowLyrics(false)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-dm text-soft hover:text-primary transition-colors"
+            >
+              <ChevronDown size={16} /> 收起歌词
+            </button>
+            <div className="flex items-center gap-2">
+              <div
+                className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0"
+                style={{
+                  background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
+                }}
+              >
+                {currentSong.cover ? (
+                  <img
+                    src={currentSong.cover}
+                    alt={currentSong.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-lg text-white/50">♪</span>
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 max-w-[200px]">
+                <p className="font-outfit text-sm font-semibold text-primary truncate">{currentSong.title}</p>
+                <p className="font-dm text-xs text-soft truncate">{currentSong.artist}</p>
+              </div>
+            </div>
+            <div className="w-20" />
+          </div>
+
+          {/* 歌词区域 */}
+          <div className="flex-1 min-h-0 mx-auto w-full max-w-2xl px-4">
+            <Lyrics lyrics={lyrics} currentLyricIndex={currentLyricIndex} />
+          </div>
+
+          {/* 底部迷你控制栏 */}
+          <div
+            className="px-4 py-3 flex flex-col gap-2"
+            style={{ borderTop: "1px solid var(--border)" }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="font-dm text-xs text-soft w-10">{formatTime(currentTime)}</span>
+              <div className="flex-1 h-1.5 rounded-full cursor-pointer"
+                style={{ background: "var(--range-track)" }}
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                  seek(ratio * duration);
+                }}
+              >
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
+                    background: "linear-gradient(90deg, var(--accent), var(--accent-2))",
+                  }}
+                />
+              </div>
+              <span className="font-dm text-xs text-soft w-10 text-right">{formatTime(duration)}</span>
+            </div>
+            <div className="flex items-center justify-center gap-6">
+              <button
+                onClick={playPrev}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-soft hover:text-primary transition-colors"
+              >
+                <SkipBack size={20} strokeWidth={2} />
+              </button>
+              <button
+                onClick={togglePlay}
+                className="w-12 h-12 rounded-full flex items-center justify-center text-white transition-transform active:scale-95"
+                style={{
+                  background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
+                  boxShadow: "0 0 20px -2px var(--accent)",
+                }}
+              >
+                {isPlaying ? (
+                  <Pause size={22} strokeWidth={2} fill="white" />
+                ) : (
+                  <Play size={22} strokeWidth={2} fill="white" className="ml-0.5" />
+                )}
+              </button>
+              <button
+                onClick={playNext}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-soft hover:text-primary transition-colors"
+              >
+                <SkipForward size={20} strokeWidth={2} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && (
         <div
