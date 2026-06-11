@@ -3,17 +3,17 @@ import usePlayerStore from "../store/playerStore";
 import type { DayThemeName } from "../types";
 
 const DAY_THEMES: { name: DayThemeName; label: string; primary: string; secondary: string }[] = [
-  { name: "mint", label: "薄荷", primary: "#0D9488", secondary: "#F59E0B" },
-  { name: "peach", label: "蜜桃", primary: "#F97316", secondary: "#F43F5E" },
-  { name: "sky", label: "晴空", primary: "#0EA5E9", secondary: "#06B6D4" },
-  { name: "lavender", label: "薰衣", primary: "#8B5CF6", secondary: "#EC4899" },
-  { name: "sand", label: "沙金", primary: "#D97706", secondary: "#92400E" },
-  { name: "rose", label: "玫红", primary: "#E11D48", secondary: "#F472B6" },
+  { name: "mint", label: "竹青", primary: "#7A9079", secondary: "#B8946A" },
+  { name: "peach", label: "缃色", primary: "#B8946A", secondary: "#A87A5A" },
+  { name: "sky", label: "天青", primary: "#7A8C9A", secondary: "#A3B5C0" },
+  { name: "lavender", label: "紫", primary: "#8A7A9B", secondary: "#A89BB5" },
+  { name: "sand", label: "秋香", primary: "#A87A5A", secondary: "#C4A572" },
+  { name: "rose", label: "胭脂", primary: "#A85A4A", secondary: "#C47868" },
 ];
 
 const NIGHT_THEMES = [
-  { name: "purple", label: "星紫", primary: "#A855F7", secondary: "#F97316" },
-  { name: "black", label: "极夜", primary: "#A855F7", secondary: "#F97316" },
+  { name: "purple", label: "玄紫", primary: "#8A7A9B", secondary: "#A87A5A" },
+  { name: "black", label: "夜雨", primary: "#8A7A9B", secondary: "#A87A5A" },
 ] as const;
 
 export default function ThemeModeToggle() {
@@ -40,15 +40,16 @@ export default function ThemeModeToggle() {
 
   return (
     <div className="flex items-center gap-2">
+      {/* PRD 2.1 深浅色双主题，一键切换 */}
       <div
-        className="inline-flex rounded-full p-1 border border-default"
+        className="inline-flex rounded-btn-pill p-1 border border-default"
         style={{ background: "var(--card-soft)" }}
       >
         <button
           onClick={() => setThemeMode("day")}
-          className="px-3 py-1.5 rounded-full text-xs font-dm transition-all duration-200 clickable-pill"
+          className="px-3 py-1 rounded-btn-pill text-caption font-dm transition-all duration-200"
           style={{
-            background: isDay ? "var(--accent)" : "transparent",
+            background: isDay ? "linear-gradient(135deg, var(--accent), var(--accent-2))" : "transparent",
             color: isDay ? "white" : "var(--text-soft)",
           }}
         >
@@ -56,9 +57,9 @@ export default function ThemeModeToggle() {
         </button>
         <button
           onClick={() => setThemeMode("night")}
-          className="px-3 py-1.5 rounded-full text-xs font-dm transition-all duration-200 clickable-pill"
+          className="px-3 py-1 rounded-btn-pill text-caption font-dm transition-all duration-200"
           style={{
-            background: !isDay ? "var(--accent)" : "transparent",
+            background: !isDay ? "linear-gradient(135deg, var(--accent), var(--accent-2))" : "transparent",
             color: !isDay ? "white" : "var(--text-soft)",
           }}
         >
@@ -79,11 +80,12 @@ export default function ThemeModeToggle() {
                   setTheme(t.name as typeof theme);
                 }
               }}
-              className="w-6 h-6 rounded-full clickable-pill transition-transform hover:scale-110"
+              className="w-6 h-6 rounded-full transition-transform hover:scale-110"
               style={{
                 background: `linear-gradient(135deg, ${t.primary}, ${t.secondary})`,
                 opacity: isActive ? 1 : 0.45,
                 boxShadow: isActive ? `0 0 10px ${t.primary}80` : undefined,
+                border: isActive ? `2px solid var(--text)` : "2px solid transparent",
               }}
               title={t.label}
               aria-label={t.label}

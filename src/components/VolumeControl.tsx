@@ -64,7 +64,7 @@ export default function VolumeControl({
     <div className="flex items-center gap-3 w-full max-w-[200px]">
       <button
         onClick={handleToggleMute}
-        className="text-white/60 hover:text-white transition-colors flex-shrink-0"
+        className="text-soft hover:text-primary transition-colors flex-shrink-0"
         aria-label="切换静音"
       >
         <VolumeIcon size={18} strokeWidth={2} />
@@ -76,7 +76,7 @@ export default function VolumeControl({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
-        <div className="absolute w-full h-1 rounded-full bg-white/10" />
+        <div className="absolute w-full h-1 rounded-full" style={{ background: "var(--range-track)" }} />
         <div
           className="absolute h-1 rounded-full"
           style={{

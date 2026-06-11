@@ -4,6 +4,7 @@ import { CATEGORIES, RANKINGS } from "../data/songs";
 import usePlayerStore from "../store/playerStore";
 import SongRow from "../components/SongRow";
 import BatchActions from "../components/BatchActions";
+import RecommendSection from "../components/RecommendSection";
 import { audioControls } from "../hooks/useAudioPlayer";
 import { useState } from "react";
 
@@ -150,10 +151,9 @@ export default function HomePage() {
 
   return (
     <div className="space-y-10">
-      {/* 搜索框 */}
+      {/* 搜索框 - 圆角卡片式布局 */}
       <div
-        className="flex items-center gap-2 rounded-2xl px-4 py-3"
-        style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+        className="flex items-center gap-2 rounded-card px-4 py-3 glass-subtle"
       >
         <Search size={18} className="text-faint flex-shrink-0" />
         <input
@@ -165,7 +165,7 @@ export default function HomePage() {
             }
           }}
           placeholder="搜索歌手或歌曲..."
-          className="flex-1 bg-transparent text-sm text-primary outline-none placeholder:text-faint font-dm"
+          className="flex-1 bg-transparent text-body text-primary outline-none placeholder:text-faint font-dm"
         />
         <button
           onClick={() => {
@@ -173,27 +173,25 @@ export default function HomePage() {
               navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
             }
           }}
-          className="px-3 py-1.5 rounded-full text-xs font-dm text-white flex-shrink-0"
-          style={{ background: "var(--accent)" }}
+          className="px-3 py-1.5 rounded-btn-pill text-caption font-dm text-white flex-shrink-0"
+          style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-2))" }}
         >
           搜索
         </button>
       </div>
 
-      {/* 正在播放 */}
+      {/* 正在播放 - 毛玻璃效果卡片 */}
       {currentSong && currentSong.title && (
         <div
-          className="flex items-center gap-4 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:scale-[1.01]"
+          className="flex items-center gap-4 rounded-card p-4 cursor-pointer transition-all duration-200 hover:scale-[1.01] glass"
           style={{
-            background: "linear-gradient(135deg, color-mix(in srgb, var(--accent) 15%, var(--card)) 0%, var(--card) 80%)",
-            border: "1px solid var(--border)",
-            boxShadow: isPlaying ? "0 4px 24px -4px var(--accent)30" : "none",
+            boxShadow: isPlaying ? "0 4px 24px -4px color-mix(in srgb, var(--accent) 20%, transparent)" : "none",
           }}
           onClick={() => navigate("/play")}
         >
           <div
-            className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0"
-            style={{ boxShadow: "0 0 16px -2px var(--accent)40" }}
+            className="w-14 h-14 rounded-btn-icon overflow-hidden flex-shrink-0"
+            style={{ boxShadow: "0 0 16px -2px color-mix(in srgb, var(--accent) 30%, transparent)" }}
           >
             {currentSong.cover ? (
               <img src={currentSong.cover} alt="" className="w-full h-full object-cover" />
@@ -207,22 +205,22 @@ export default function HomePage() {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-dm text-[10px] text-soft flex items-center gap-1.5 mb-0.5">
+            <p className="font-dm text-mono text-soft flex items-center gap-1.5 mb-0.5">
               <span
                 className="inline-block w-1.5 h-1.5 rounded-full animate-pulse"
                 style={{ background: "var(--accent)" }}
               />
               正在播放
             </p>
-            <p className="font-outfit font-semibold text-sm text-primary truncate">{currentSong.title}</p>
-            <p className="font-dm text-xs text-soft truncate">{currentSong.artist}</p>
+            <p className="font-outfit text-body font-semibold text-primary truncate">{currentSong.title}</p>
+            <p className="font-dm text-caption text-soft truncate">{currentSong.artist}</p>
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); togglePlay(); }}
             className="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0 transition-transform active:scale-90"
             style={{
               background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
-              boxShadow: "0 0 16px -2px var(--accent)",
+              boxShadow: "0 2px 12px -2px color-mix(in srgb, var(--accent) 30%, transparent)",
             }}
           >
             {isPlaying ? <Pause size={16} fill="white" /> : <Play size={16} fill="white" className="ml-0.5" />}
@@ -231,11 +229,10 @@ export default function HomePage() {
       )}
 
       <section
-        className="relative overflow-hidden rounded-3xl p-8 md:p-10"
+        className="relative overflow-hidden rounded-card p-8 md:p-10 glass"
         style={{
           background:
-            "linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, var(--card)) 0%, var(--card) 60%)",
-          border: "1px solid var(--border)",
+            "linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, var(--card)) 0%, color-mix(in srgb, var(--accent-2) 6%, var(--card)) 100%)",
         }}
       >
         <div
@@ -283,6 +280,16 @@ export default function HomePage() {
               探索全部曲库
             </Link>
             <Link
+              to="/recommend"
+              className="clickable-pill px-4 py-2 rounded-full text-sm font-dm text-primary"
+              style={{
+                background: "var(--card-soft)",
+                border: "1px solid var(--border-strong)",
+              }}
+            >
+              个性推荐
+            </Link>
+            <Link
               to="/ranking"
               className="clickable-pill px-4 py-2 rounded-full text-sm font-dm text-primary"
               style={{
@@ -295,6 +302,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <RecommendSection />
 
       <section>
         <div className="flex items-end justify-between mb-4">

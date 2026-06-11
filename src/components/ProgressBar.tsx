@@ -77,7 +77,7 @@ export default function ProgressBar({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
-        <div className="absolute w-full h-1 rounded-full bg-white/10 group-hover:h-1.5 transition-all" />
+        <div className="absolute w-full h-1 rounded-full group-hover:h-1.5 transition-all" style={{ background: "var(--range-track)" }} />
         <div
           className="absolute h-1 rounded-full group-hover:h-1.5 transition-all"
           style={{
@@ -94,10 +94,10 @@ export default function ProgressBar({
         />
       </div>
       <div className="flex justify-between items-center">
-        <span className="font-dm text-xs text-white/60">
+        <span className="font-dm text-mono text-soft">
           {formatTime(isDragging ? dragTime : currentTime)}
         </span>
-        <span className="font-dm text-xs text-white/60">
+        <span className="font-dm text-mono text-soft">
           {formatTime(duration)}
         </span>
       </div>

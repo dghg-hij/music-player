@@ -165,3 +165,64 @@ export const CATEGORY_KEYWORDS: Record<string, string[]> = {
   rnb: ["R&B", "陶喆", "方大同", "袁娅维"],
   classical: ["古典", "钢琴", "交响", "久石让"],
 };
+
+// 系统推荐歌单（可被用户收藏） - PRD 3.5.1
+export interface CuratedPlaylist {
+  id: string;
+  name: string;
+  description: string;
+  cover: string;
+  songCount: number;
+  accent: string;
+}
+
+export const CURATED_PLAYLISTS: CuratedPlaylist[] = [
+  {
+    id: "curated_daily",
+    name: "今日私藏",
+    description: "编辑精选，每日更新",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=daily%20music%20selection%20vibrant%20orange%20sunset&image_size=square",
+    songCount: 30,
+    accent: "#F97316",
+  },
+  {
+    id: "curated_chill",
+    name: "深夜放松",
+    description: "睡前聆听，温柔陪伴",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=midnight%20chill%20lofi%20calm%20purple%20moon&image_size=square",
+    songCount: 24,
+    accent: "#8B5CF6",
+  },
+  {
+    id: "curated_workout",
+    name: "运动燃脂",
+    description: "高能节拍，助力燃脂",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=workout%20energy%20gym%20fitness%20red%20neon&image_size=square",
+    songCount: 28,
+    accent: "#EF4444",
+  },
+  {
+    id: "curated_study",
+    name: "学习专注",
+    description: "沉浸氛围，提升效率",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=study%20focus%20calm%20desk%20soft%20green%20teal&image_size=square",
+    songCount: 20,
+    accent: "#10B981",
+  },
+  {
+    id: "curated_drive",
+    name: "驾驶路上",
+    description: "驰骋公路，热血驰骋",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=road%20trip%20highway%20open%20sky%20blue%20driving&image_size=square",
+    songCount: 35,
+    accent: "#0EA5E9",
+  },
+  {
+    id: "curated_classic",
+    name: "怀旧金曲",
+    description: "岁月经典，回忆满满",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=classic%20nostalgic%20vintage%20vinyl%20amber%20warm&image_size=square",
+    songCount: 40,
+    accent: "#F59E0B",
+  },
+];

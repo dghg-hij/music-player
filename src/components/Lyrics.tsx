@@ -1,21 +1,32 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import type { LyricLine } from "../types";
+import usePlayerStore from "../store/playerStore";
 
 interface LyricsProps {
   lyrics: LyricLine[];
   currentLyricIndex: number;
+  onSeek?: (time: number) => void;
 }
 
-export default function Lyrics({ lyrics, currentLyricIndex }: LyricsProps) {
+export default function Lyrics({ lyrics, currentLyricIndex, onSeek }: LyricsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const lineRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const userScrollTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const isAutoScrollingRef = useRef(false);
 
+  // 模块 8 设置：歌词字号
+  const lyricFontSize = usePlayerStore((s) => s.lyricFontSize);
+
   const setLineRef = useCallback((index: number) => (el: HTMLDivElement | null) => {
     lineRefs.current[index] = el;
   }, []);
+
+  // 点击歌词行 → 跳转到对应时间点 (PRD 3.2.3 步骤 3)
+  const handleLineClick = (line: LyricLine) => {
+    if (!onSeek) return;
+    onSeek(line.time);
+  };
 
   // 检测用户手动滚动
   useEffect(() => {
@@ -96,12 +107,15 @@ export default function Lyrics({ lyrics, currentLyricIndex }: LyricsProps) {
           <div
             key={`${index}-${line.time}`}
             ref={setLineRef(index)}
-            className={`transition-all duration-300 ease-out py-2.5 px-3 rounded-lg cursor-default ${
+            onClick={() => handleLineClick(line)}
+            className={`transition-all duration-300 ease-out py-2.5 px-3 rounded-lg ${
+              onSeek ? "cursor-pointer hover:bg-card-soft" : "cursor-default"
+            } ${
               isActive
-                ? "font-outfit font-semibold text-lg"
+                ? "font-outfit font-semibold"
                 : isNear
-                  ? "font-dm text-sm"
-                  : "font-dm text-sm"
+                  ? "font-dm"
+                  : "font-dm"
             }`}
             style={{
               color: isActive
@@ -109,6 +123,8 @@ export default function Lyrics({ lyrics, currentLyricIndex }: LyricsProps) {
                 : isNear
                   ? "var(--text-soft)"
                   : "var(--text-faint)",
+              fontSize: isActive ? `${lyricFontSize}px` : `${Math.max(12, lyricFontSize - 2)}px`,
+              lineHeight: 1.5,
             }}
           >
             {line.text}

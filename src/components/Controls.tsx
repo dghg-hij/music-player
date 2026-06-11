@@ -46,9 +46,10 @@ export default function Controls({
           onClick={onTogglePlayMode}
           className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95 ${
             playMode === "sequential"
-              ? "text-white/30 hover:text-white/60 hover:bg-white/5"
-              : "text-accent hover:bg-accent/10"
+              ? "text-soft hover:text-primary"
+              : "hover:bg-card-soft"
           }`}
+          style={playMode !== "sequential" ? { color: "var(--accent)" } : undefined}
           aria-label={PlayModeLabel({ mode: playMode })}
           title={PlayModeLabel({ mode: playMode })}
         >
@@ -56,7 +57,7 @@ export default function Controls({
         </button>
         <button
           onClick={onPrev}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 active:scale-95"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-card-soft transition-all duration-200 active:scale-95"
           aria-label="上一首"
         >
           <SkipBack size={20} strokeWidth={2} />
@@ -66,7 +67,7 @@ export default function Controls({
           className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-200 active:scale-95"
           style={{
             background: `linear-gradient(135deg, ${primary}, ${secondary})`,
-            boxShadow: `0 0 20px ${primary}66, 0 0 40px ${secondary}33`,
+            boxShadow: `0 4px 20px ${primary}44, 0 2px 10px ${secondary}22`,
           }}
           aria-label={isPlaying ? "暂停" : "播放"}
         >
@@ -78,7 +79,7 @@ export default function Controls({
         </button>
         <button
           onClick={onNext}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 active:scale-95"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-card-soft transition-all duration-200 active:scale-95"
           aria-label="下一首"
         >
           <SkipForward size={20} strokeWidth={2} />
@@ -88,7 +89,7 @@ export default function Controls({
           className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95 ${
             isFavorite
               ? "text-red-500 hover:bg-red-500/10"
-              : "text-white/30 hover:text-red-400 hover:bg-white/5"
+              : "text-soft hover:text-red-400"
           }`}
           aria-label={isFavorite ? "取消收藏" : "收藏"}
           title={isFavorite ? "取消收藏" : "收藏"}
@@ -100,7 +101,7 @@ export default function Controls({
           />
         </button>
       </div>
-      <span className="font-dm text-[10px] text-white/25">
+      <span className="font-dm text-mono text-faint">
         {PlayModeLabel({ mode: playMode })}
       </span>
     </div>

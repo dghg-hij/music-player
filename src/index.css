@@ -14,98 +14,164 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  --bg: #0d0d0d;
-  --card: #1a1a2e;
-  --card-soft: #232342;
-  --text: #ffffff;
-  --text-soft: rgba(255, 255, 255, 0.6);
-  --text-faint: rgba(255, 255, 255, 0.3);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.15);
-  --accent: #a855f7;
-  --accent-2: #f97316;
-  --scrollbar: rgba(168, 85, 247, 0.3);
-  --scrollbar-hover: rgba(168, 85, 247, 0.5);
-  --range-thumb: #a855f7;
-  --range-track: rgba(255, 255, 255, 0.1);
+  /* 日间主题 - 东方古典·山水卷：宣纸 × 玉色 × 缃色 × 竹青 */
+  --bg-from: #faf6ec;
+  --bg-to: #e6dcc4;
+  --bg: #faf6ec;
+  --card: rgba(253, 250, 242, 0.85);
+  --card-soft: rgba(245, 240, 225, 0.7);
+  --text: #2a2620;
+  --text-soft: #5a544a;
+  --text-faint: #8a8378;
+  --border: rgba(122, 144, 121, 0.2);
+  --border-strong: rgba(122, 144, 121, 0.34);
+  --accent: #7a9079;
+  --accent-2: #b8946a;
+  --scrollbar: rgba(122, 144, 121, 0.4);
+  --scrollbar-hover: rgba(122, 144, 121, 0.65);
+  --range-thumb: #7a9079;
+  --range-track: rgba(122, 144, 121, 0.2);
+
+  /* 成功/错误/警告 - 低饱和 */
+  --success: #6b8e6b;
+  --error: #a85a4a;
+  --warning: #b8946a;
+
+  /* 字体规范 - PRD 2.4 */
+  --font-title-lg: 700 24px/1.3 "Outfit", sans-serif;
+  --font-title-sm: 600 16px/1.4 "Outfit", sans-serif;
+  --font-body: 400 14px/1.5 "DM Sans", sans-serif;
+  --font-caption: 400 12px/1.5 "DM Sans", sans-serif;
+  --font-mono: 500 11px/1.4 "DM Sans", sans-serif;
+
+  /* 间距规范 - PRD 2.5 */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+
+  /* 圆角规范 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
 }
 
-:root.day {
-  --bg: #faf7f2;
-  --card: #ffffff;
-  --card-soft: #f1ede5;
-  --text: #1f2937;
-  --text-soft: #6b7280;
-  --text-faint: #9ca3af;
-  --border: rgba(0, 0, 0, 0.06);
-  --border-strong: rgba(0, 0, 0, 0.12);
-  --accent: #0d9488;
-  --accent-2: #f59e0b;
-  --scrollbar: rgba(13, 148, 136, 0.3);
-  --scrollbar-hover: rgba(13, 148, 136, 0.5);
-  --range-thumb: #0d9488;
-  --range-track: rgba(0, 0, 0, 0.08);
+/* 夜间主题 - 东方古典·夜雨：松烟墨 × 黛 × 玄紫 × 鸦青 */
+:root.night {
+  --bg-from: #14131a;
+  --bg-to: #1e1a2a;
+  --bg: #14131a;
+  --card: rgba(28, 25, 38, 0.7);
+  --card-soft: rgba(38, 34, 50, 0.55);
+  --text: #ebe6d4;
+  --text-soft: #8a8478;
+  --text-faint: #4a463e;
+  --border: rgba(138, 122, 155, 0.22);
+  --border-strong: rgba(138, 122, 155, 0.38);
+  --accent: #8a7a9b;
+  --accent-2: #a87a5a;
+  --scrollbar: rgba(138, 122, 155, 0.42);
+  --scrollbar-hover: rgba(138, 122, 155, 0.7);
+  --range-thumb: #8a7a9b;
+  --range-track: rgba(138, 122, 155, 0.22);
+
+  --success: #7a9079;
+  --error: #a85a4a;
+  --warning: #b8946a;
+}
+
+/* 日间色系变体 - 东方古典色（低饱和，温润雅致） */
+:root.day.mint {
+  --accent: #7a9079;
+  --accent-2: #b8946a;
+  --range-thumb: #7a9079;
+  --scrollbar: rgba(122, 144, 121, 0.4);
+  --scrollbar-hover: rgba(122, 144, 121, 0.65);
 }
 
 :root.day.peach {
-  --accent: #f97316;
-  --accent-2: #f43f5e;
-  --range-thumb: #f97316;
-  --scrollbar: rgba(249, 115, 22, 0.3);
-  --scrollbar-hover: rgba(249, 115, 22, 0.5);
+  --accent: #b8946a;
+  --accent-2: #a87a5a;
+  --range-thumb: #b8946a;
+  --scrollbar: rgba(184, 148, 106, 0.4);
+  --scrollbar-hover: rgba(184, 148, 106, 0.65);
 }
 
 :root.day.sky {
-  --accent: #0ea5e9;
-  --accent-2: #06b6d4;
-  --range-thumb: #0ea5e9;
-  --scrollbar: rgba(14, 165, 233, 0.3);
-  --scrollbar-hover: rgba(14, 165, 233, 0.5);
+  --accent: #7a8c9a;
+  --accent-2: #a3b5c0;
+  --range-thumb: #7a8c9a;
+  --scrollbar: rgba(122, 140, 154, 0.4);
+  --scrollbar-hover: rgba(122, 140, 154, 0.65);
 }
 
 :root.day.lavender {
-  --accent: #8b5cf6;
-  --accent-2: #ec4899;
-  --range-thumb: #8b5cf6;
-  --scrollbar: rgba(139, 92, 246, 0.3);
-  --scrollbar-hover: rgba(139, 92, 246, 0.5);
+  --accent: #8a7a9b;
+  --accent-2: #a89bb5;
+  --range-thumb: #8a7a9b;
+  --scrollbar: rgba(138, 122, 155, 0.4);
+  --scrollbar-hover: rgba(138, 122, 155, 0.65);
 }
 
 :root.day.sand {
-  --accent: #d97706;
-  --accent-2: #92400e;
-  --range-thumb: #d97706;
-  --scrollbar: rgba(217, 119, 6, 0.3);
-  --scrollbar-hover: rgba(217, 119, 6, 0.5);
+  --accent: #a87a5a;
+  --accent-2: #c4a572;
+  --range-thumb: #a87a5a;
+  --scrollbar: rgba(168, 122, 90, 0.4);
+  --scrollbar-hover: rgba(168, 122, 90, 0.65);
 }
 
 :root.day.rose {
-  --accent: #e11d48;
-  --accent-2: #f472b6;
-  --range-thumb: #e11d48;
-  --scrollbar: rgba(225, 29, 72, 0.3);
-  --scrollbar-hover: rgba(225, 29, 72, 0.5);
+  --accent: #a85a4a;
+  --accent-2: #c47868;
+  --range-thumb: #a85a4a;
+  --scrollbar: rgba(168, 90, 74, 0.4);
+  --scrollbar-hover: rgba(168, 90, 74, 0.65);
 }
 
+/* 夜间主题变体 - 东方古典·夜雨深色 */
 :root.night.black {
-  --bg: #000000;
-  --card: #0a0a0a;
-  --card-soft: #141414;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.1);
-  --accent: #a855f7;
-  --accent-2: #f97316;
-  --range-thumb: #a855f7;
-  --scrollbar: rgba(168, 85, 247, 0.3);
-  --scrollbar-hover: rgba(168, 85, 247, 0.5);
+  --bg-from: #0c0b11;
+  --bg-to: #18152a;
+  --bg: #0c0b11;
+  --card: rgba(22, 18, 32, 0.72);
+  --card-soft: rgba(30, 26, 44, 0.55);
+  --border: rgba(138, 122, 155, 0.2);
+  --border-strong: rgba(138, 122, 155, 0.34);
+  --accent: #8a7a9b;
+  --accent-2: #a87a5a;
+  --range-thumb: #8a7a9b;
+  --scrollbar: rgba(138, 122, 155, 0.4);
+  --scrollbar-hover: rgba(138, 122, 155, 0.65);
 }
 
 body {
   margin: 0;
-  background-color: var(--bg);
+  min-height: 100vh;
   color: var(--text);
   overflow-x: hidden;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background 0.4s ease, color 0.4s ease;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 60% 50% at 20% 10%, color-mix(in srgb, var(--accent) 12%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 85% 90%, color-mix(in srgb, var(--accent-2) 10%, transparent) 0%, transparent 55%),
+    linear-gradient(135deg, var(--bg-from) 0%, color-mix(in srgb, var(--bg-from) 50%, var(--bg-to) 50%) 50%, var(--bg-to) 100%);
+  background-attachment: fixed;
+}
+
+#root {
+  min-height: 100vh;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 60% 50% at 20% 10%, color-mix(in srgb, var(--accent) 12%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 85% 90%, color-mix(in srgb, var(--accent-2) 10%, transparent) 0%, transparent 55%),
+    linear-gradient(135deg, var(--bg-from) 0%, color-mix(in srgb, var(--bg-from) 50%, var(--bg-to) 50%) 50%, var(--bg-to) 100%);
+  background-attachment: fixed;
 }
 
 ::-webkit-scrollbar {
@@ -165,6 +231,7 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: 0 0 10px var(--range-thumb);
 }
 
+/* 交互态 */
 .clickable {
   position: relative;
   cursor: pointer;
@@ -174,7 +241,7 @@ input[type="range"]::-moz-range-thumb {
 
 .clickable-ring {
   box-shadow: 0 0 0 1.5px var(--accent);
-  border-radius: 0.75rem;
+  border-radius: var(--radius-md);
 }
 
 .clickable-ring:hover {
@@ -183,7 +250,7 @@ input[type="range"]::-moz-range-thumb {
 
 .clickable-pill {
   box-shadow: 0 0 0 1.5px var(--accent);
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
 }
 
 .clickable-pill:hover {
@@ -192,19 +259,43 @@ input[type="range"]::-moz-range-thumb {
 
 .icon-clickable {
   box-shadow: 0 0 0 1.5px currentColor;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
 }
 
 .icon-clickable:hover {
   box-shadow: 0 0 0 2px currentColor, 0 0 12px -2px currentColor;
 }
 
+/* 卡片表面 - 圆角卡片式布局 */
 .card-surface {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 1.5rem;
+  border-radius: var(--radius-2xl);
 }
 
+/* 毛玻璃效果 - PRD 2.1 */
+.glass {
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border: 1px solid var(--border);
+}
+
+.glass-strong {
+  background: color-mix(in srgb, var(--card) 65%, transparent);
+  backdrop-filter: blur(30px) saturate(1.4);
+  -webkit-backdrop-filter: blur(30px) saturate(1.4);
+  border: 1px solid var(--border-strong);
+}
+
+.glass-subtle {
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
+  border: 1px solid var(--border);
+}
+
+/* 文字色 */
 .text-primary {
   color: var(--text);
 }
@@ -217,6 +308,7 @@ input[type="range"]::-moz-range-thumb {
   color: var(--text-faint);
 }
 
+/* 背景色 */
 .bg-card {
   background-color: var(--card);
 }
@@ -225,6 +317,7 @@ input[type="range"]::-moz-range-thumb {
   background-color: var(--card-soft);
 }
 
+/* 边框色 */
 .border-default {
   border-color: var(--border);
 }
@@ -233,10 +326,11 @@ input[type="range"]::-moz-range-thumb {
   border-color: var(--border-strong);
 }
 
+/* 歌曲行操作按钮 - PRD 2.6 组件规范：图标按钮 32×32px */
 .song-row-action {
-  width: 28px;
-  height: 28px;
-  border-radius: 9999px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -250,26 +344,27 @@ input[type="range"]::-moz-range-thumb {
 
 .song-row-action:hover {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
   box-shadow: 0 0 0 1.5px var(--accent);
 }
 
 .song-row-action.is-active {
   color: var(--accent);
   box-shadow: 0 0 0 1.5px var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .song-row-action.is-favorite {
-  color: #ef4444;
-  box-shadow: 0 0 0 1.5px #ef4444;
+  color: var(--error);
+  box-shadow: 0 0 0 1.5px var(--error);
 }
 
 .song-row-action.is-favorite:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.12);
+  color: var(--error);
+  background: color-mix(in srgb, var(--error) 10%, transparent);
 }
 
+/* 脉冲动画 */
 @keyframes ringPulse {
   0% {
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent);
@@ -281,4 +376,58 @@ input[type="range"]::-moz-range-thumb {
 
 .ring-pulse {
   animation: ringPulse 1.6s ease-out infinite;
+}
+
+/* PRD 评审纪要 B3：切歌时一次性闪烁提示（2次脉冲后停止） */
+@keyframes ringFlash {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 80%, transparent); }
+  40% { box-shadow: 0 0 0 8px transparent; }
+  50% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); }
+  90% { box-shadow: 0 0 0 8px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.ring-flash {
+  animation: ringFlash 1.5s ease-out 1;
+}
+
+/* 播放中音波动画 - 更柔和的清新风格 */
+@keyframes waveHeal {
+  0%, 100% { height: 3px; }
+  50% { height: 14px; }
+}
+
+/* 选中态左侧强调色边框 - PRD 2.6 */
+.song-row-active {
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--card-soft));
+}
+
+/* F1 无障碍：焦点可见样式 - PRD 5.4 + 评审纪要 F1 */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 屏幕阅读器专用 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* 减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
