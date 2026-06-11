@@ -167,7 +167,7 @@ const useAuthStore = create<AuthStore>((set, get) => ({
     // Mock 模式
     const users = getStoredUsers();
     const user = users.find(
-      (u) => u.account === account && u.password === password
+      (u) => (u.account === account || u.phone === account) && u.password === password
     );
     if (!user) return "账号或密码错误";
 

@@ -37,7 +37,7 @@ export function ArtistDetailPage() {
       if (cancelled) return;
       setArtist(a);
       if (a) {
-        const res = await searchSongs(a.name, 30);
+        const res = await searchSongs(a.name, a.songCount);
         if (!cancelled) setSongs(res);
       }
       if (!cancelled) setLoading(false);
@@ -146,7 +146,7 @@ export function AlbumDetailPage() {
       if (cancelled) return;
       setAlbum(a);
       if (a) {
-        const res = await searchSongs(`${a.artist} ${a.name}`, album?.songCount || 12);
+        const res = await searchSongs(`${a.artist} ${a.name}`, a.songCount);
         if (!cancelled) setSongs(res.slice(0, a.songCount));
       }
       if (!cancelled) setLoading(false);

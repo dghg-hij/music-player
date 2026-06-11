@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   ArrowLeft,
   Mic2,
@@ -10,6 +10,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { getHotArtists, type HotArtist } from "../services/musicApi";
+import PullToRefresh from "../components/PullToRefresh";
 
 function formatHeat(n: number): string {
   if (n >= 100000000) return (n / 100000000).toFixed(1) + "亿";
@@ -52,6 +53,10 @@ export default function HotArtistsPage() {
   const navigate = useNavigate();
   const [artists, setArtists] = useState<HotArtist[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const handleRefresh = useCallback(() => {
+    setRefreshKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,10 +70,11 @@ export default function HotArtistsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshKey]);
 
   return (
-    <div className="space-y-6">
+    <PullToRefresh onRefresh={handleRefresh}>
+    <div className="space-y-6" key={refreshKey}>
       {/* 头部 */}
       <div
         className="relative overflow-hidden rounded-3xl p-6 md:p-8"
@@ -234,5 +240,6 @@ export default function HotArtistsPage() {
         </p>
       )}
     </div>
+    </PullToRefresh>
   );
 }

@@ -1,10 +1,14 @@
--- ============================================================
--- 音乐播放器数据库 Schema
--- 对应 PRD 4.3 数据库设计
--- 数据库：Cloudflare D1 (SQLite)
--- ============================================================
+// ============================================================
+// 模块10 - 数据库设计
+// 数据库初始化与建表语句
+// ============================================================
 
--- 1. t_user — 用户表 PRD 4.3.1
+/**
+ * 所有建表 SQL，与 schema.sql 保持同步
+ * 用于运行时动态初始化（如本地开发、测试环境）
+ */
+export const SCHEMA_SQL = `
+-- t_user
 CREATE TABLE IF NOT EXISTS t_user (
   uid TEXT PRIMARY KEY,
   phone TEXT UNIQUE,
@@ -13,7 +17,7 @@ CREATE TABLE IF NOT EXISTS t_user (
   nickname TEXT NOT NULL DEFAULT '',
   avatar TEXT DEFAULT '',
   signature TEXT DEFAULT '',
-  status INTEGER NOT NULL DEFAULT 1,  -- 0=禁用 1=正常
+  status INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL DEFAULT (unixepoch()),
   updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
   deleted_at INTEGER DEFAULT NULL
@@ -21,7 +25,7 @@ CREATE TABLE IF NOT EXISTS t_user (
 CREATE INDEX IF NOT EXISTS idx_user_phone ON t_user(phone);
 CREATE INDEX IF NOT EXISTS idx_user_account ON t_user(account);
 
--- 2. t_song — 歌曲表 PRD 4.3.2
+-- t_song
 CREATE TABLE IF NOT EXISTS t_song (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   netease_id INTEGER UNIQUE,
@@ -32,7 +36,7 @@ CREATE TABLE IF NOT EXISTS t_song (
   cover TEXT DEFAULT '',
   lyrics TEXT DEFAULT '',
   lyrics_translation TEXT DEFAULT '',
-  is_paid INTEGER NOT NULL DEFAULT 0,  -- 0=免费 1=付费
+  is_paid INTEGER NOT NULL DEFAULT 0,
   heat INTEGER DEFAULT 0,
   genre TEXT DEFAULT '',
   language TEXT DEFAULT '',
@@ -42,7 +46,7 @@ CREATE TABLE IF NOT EXISTS t_song (
 );
 CREATE INDEX IF NOT EXISTS idx_song_netease_id ON t_song(netease_id);
 
--- 3. t_album — 专辑表 PRD 4.3.3
+-- t_album
 CREATE TABLE IF NOT EXISTS t_album (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -56,7 +60,7 @@ CREATE TABLE IF NOT EXISTS t_album (
   deleted_at INTEGER DEFAULT NULL
 );
 
--- 4. t_artist — 歌手表 PRD 4.3.4
+-- t_artist
 CREATE TABLE IF NOT EXISTS t_artist (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -69,7 +73,7 @@ CREATE TABLE IF NOT EXISTS t_artist (
   deleted_at INTEGER DEFAULT NULL
 );
 
--- 5. t_playlist — 歌单表 PRD 4.3.5
+-- t_playlist
 CREATE TABLE IF NOT EXISTS t_playlist (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -78,14 +82,14 @@ CREATE TABLE IF NOT EXISTS t_playlist (
   creator_uid TEXT NOT NULL,
   song_count INTEGER DEFAULT 0,
   play_count INTEGER DEFAULT 0,
-  is_public INTEGER NOT NULL DEFAULT 1,  -- 0=私密 1=公开
+  is_public INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL DEFAULT (unixepoch()),
   updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
   deleted_at INTEGER DEFAULT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_playlist_creator ON t_playlist(creator_uid);
 
--- 6. t_playlist_song — 歌单歌曲关联表 PRD 4.3.6
+-- t_playlist_song
 CREATE TABLE IF NOT EXISTS t_playlist_song (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   playlist_id TEXT NOT NULL,
@@ -97,7 +101,7 @@ CREATE TABLE IF NOT EXISTS t_playlist_song (
 CREATE INDEX IF NOT EXISTS idx_ps_playlist ON t_playlist_song(playlist_id);
 CREATE INDEX IF NOT EXISTS idx_ps_song ON t_playlist_song(song_id);
 
--- 7. t_collection — 收藏表 PRD 4.3.7
+-- t_collection
 CREATE TABLE IF NOT EXISTS t_collection (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   uid TEXT NOT NULL,
@@ -109,8 +113,7 @@ CREATE TABLE IF NOT EXISTS t_collection (
 CREATE INDEX IF NOT EXISTS idx_collection_uid ON t_collection(uid);
 CREATE INDEX IF NOT EXISTS idx_collection_target ON t_collection(target_type, target_id);
 
--- 8. t_play_history — 播放历史表 PRD 4.3.8
--- D3 评审修正：使用 upsert 逻辑（同歌曲覆盖更新）
+-- t_play_history
 CREATE TABLE IF NOT EXISTS t_play_history (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   uid TEXT NOT NULL,
@@ -123,7 +126,7 @@ CREATE TABLE IF NOT EXISTS t_play_history (
 CREATE INDEX IF NOT EXISTS idx_history_uid ON t_play_history(uid);
 CREATE INDEX IF NOT EXISTS idx_history_last ON t_play_history(uid, last_played_at DESC);
 
--- 9. t_user_settings — 用户设置表 PRD 4.3.9
+-- t_user_settings
 CREATE TABLE IF NOT EXISTS t_user_settings (
   uid TEXT PRIMARY KEY,
   cache_size INTEGER DEFAULT 2048,
@@ -138,46 +141,19 @@ CREATE TABLE IF NOT EXISTS t_user_settings (
   updated_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
 
--- 10. t_member — 会员表 PRD 4.3.10
-CREATE TABLE IF NOT EXISTS t_member (
-  uid TEXT PRIMARY KEY,
-  level TEXT NOT NULL DEFAULT 'normal',  -- normal/vip/svip
-  expire_time INTEGER DEFAULT 0,
-  auto_renew INTEGER DEFAULT 0,
-  created_at INTEGER NOT NULL DEFAULT (unixepoch()),
-  updated_at INTEGER NOT NULL DEFAULT (unixepoch())
-);
-
--- 11. t_order — 订单表 PRD 4.3.11
-CREATE TABLE IF NOT EXISTS t_order (
-  order_no TEXT PRIMARY KEY,
-  uid TEXT NOT NULL,
-  plan_id TEXT NOT NULL,
-  level TEXT NOT NULL,
-  cycle TEXT NOT NULL,
-  amount REAL NOT NULL,
-  payment_method TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending',  -- pending/paid/cancelled/refunded
-  created_at INTEGER NOT NULL DEFAULT (unixepoch()),
-  paid_at INTEGER DEFAULT NULL,
-  effective_until INTEGER DEFAULT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_order_uid ON t_order(uid);
-CREATE INDEX IF NOT EXISTS idx_order_status ON t_order(status);
-
--- 12. t_feedback — 反馈表 PRD 4.3.12
+-- t_feedback
 CREATE TABLE IF NOT EXISTS t_feedback (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   uid TEXT NOT NULL,
   content TEXT NOT NULL,
   contact TEXT DEFAULT '',
   screenshot TEXT DEFAULT '',
-  status TEXT NOT NULL DEFAULT 'pending',  -- pending/processing/resolved/closed
+  status TEXT NOT NULL DEFAULT 'pending',
   created_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
 CREATE INDEX IF NOT EXISTS idx_feedback_uid ON t_feedback(uid);
 
--- 13. t_search_log — 搜索日志表 PRD 4.3.13
+-- t_search_log
 CREATE TABLE IF NOT EXISTS t_search_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   uid TEXT NOT NULL,
@@ -188,7 +164,7 @@ CREATE TABLE IF NOT EXISTS t_search_log (
 CREATE INDEX IF NOT EXISTS idx_search_uid ON t_search_log(uid);
 CREATE INDEX IF NOT EXISTS idx_search_keyword ON t_search_log(keyword);
 
--- 14. t_oauth — 第三方授权表 PRD 4.3（D2 评审新增）
+-- t_oauth
 CREATE TABLE IF NOT EXISTS t_oauth (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   uid TEXT NOT NULL,
@@ -203,7 +179,7 @@ CREATE TABLE IF NOT EXISTS t_oauth (
 );
 CREATE INDEX IF NOT EXISTS idx_oauth_uid ON t_oauth(uid);
 
--- 15. t_sms_code — 短信验证码表（新增，替代 localStorage 存储）
+-- t_sms_code
 CREATE TABLE IF NOT EXISTS t_sms_code (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   phone TEXT NOT NULL,
@@ -214,7 +190,7 @@ CREATE TABLE IF NOT EXISTS t_sms_code (
 );
 CREATE INDEX IF NOT EXISTS idx_sms_phone ON t_sms_code(phone, type);
 
--- 16. t_token — Token 表（用于服务端 Token 管理）
+-- t_token
 CREATE TABLE IF NOT EXISTS t_token (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   uid TEXT NOT NULL,
@@ -227,70 +203,13 @@ CREATE TABLE IF NOT EXISTS t_token (
 CREATE INDEX IF NOT EXISTS idx_token_access ON t_token(access_token);
 CREATE INDEX IF NOT EXISTS idx_token_refresh ON t_token(refresh_token);
 CREATE INDEX IF NOT EXISTS idx_token_uid ON t_token(uid);
+`;
 
--- ============================================================
--- 模块 12 & 13：安全与权限 / 监控与日志 相关表
--- ============================================================
-
--- 17. t_log_api — 接口访问日志表（13.4）
-CREATE TABLE IF NOT EXISTS t_log_api (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  request_id TEXT NOT NULL DEFAULT '',
-  uid TEXT DEFAULT '',
-  ip TEXT DEFAULT '',
-  method TEXT NOT NULL,
-  path TEXT NOT NULL,
-  status_code INTEGER NOT NULL DEFAULT 0,
-  duration INTEGER NOT NULL DEFAULT 0,  -- 耗时（毫秒）
-  created_at INTEGER NOT NULL DEFAULT (unixepoch())
-);
-CREATE INDEX IF NOT EXISTS idx_log_api_uid ON t_log_api(uid);
-CREATE INDEX IF NOT EXISTS idx_log_api_path ON t_log_api(path);
-CREATE INDEX IF NOT EXISTS idx_log_api_created ON t_log_api(created_at);
-
--- 18. t_log_error — 错误日志表（13.4）
-CREATE TABLE IF NOT EXISTS t_log_error (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  request_id TEXT NOT NULL DEFAULT '',
-  uid TEXT DEFAULT '',
-  level TEXT NOT NULL DEFAULT 'error',  -- error / warn
-  message TEXT NOT NULL,
-  stack TEXT DEFAULT '',
-  path TEXT DEFAULT '',
-  method TEXT DEFAULT '',
-  data TEXT DEFAULT '',  -- JSON 格式附加数据
-  created_at INTEGER NOT NULL DEFAULT (unixepoch())
-);
-CREATE INDEX IF NOT EXISTS idx_log_error_level ON t_log_error(level);
-CREATE INDEX IF NOT EXISTS idx_log_error_created ON t_log_error(created_at);
-
--- 19. t_log_behavior — 用户行为日志表（13.4）
-CREATE TABLE IF NOT EXISTS t_log_behavior (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  uid TEXT NOT NULL,
-  action TEXT NOT NULL,       -- play / search / collect / download 等
-  target_type TEXT DEFAULT '', -- song / playlist / album / artist
-  target_id TEXT DEFAULT '',   -- 目标资源 ID
-  data TEXT DEFAULT '',        -- JSON 格式附加数据
-  ip TEXT DEFAULT '',
-  created_at INTEGER NOT NULL DEFAULT (unixepoch())
-);
-CREATE INDEX IF NOT EXISTS idx_log_behavior_uid ON t_log_behavior(uid);
-CREATE INDEX IF NOT EXISTS idx_log_behavior_action ON t_log_behavior(action);
-CREATE INDEX IF NOT EXISTS idx_log_behavior_created ON t_log_behavior(created_at);
-
--- 20. t_log_play — 播放上报日志表（13.4）
-CREATE TABLE IF NOT EXISTS t_log_play (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  uid TEXT NOT NULL,
-  song_id INTEGER NOT NULL,
-  play_time INTEGER DEFAULT 0,   -- 播放时长（秒）
-  progress REAL DEFAULT 0,       -- 播放进度（秒）
-  device TEXT DEFAULT '',         -- 设备类型
-  quality TEXT DEFAULT '',        -- 播放音质
-  ip TEXT DEFAULT '',
-  created_at INTEGER NOT NULL DEFAULT (unixepoch())
-);
-CREATE INDEX IF NOT EXISTS idx_log_play_uid ON t_log_play(uid);
-CREATE INDEX IF NOT EXISTS idx_log_play_song ON t_log_play(song_id);
-CREATE INDEX IF NOT EXISTS idx_log_play_created ON t_log_play(created_at);
+/**
+ * 初始化数据库：执行所有建表语句
+ * 适用于本地开发或测试环境自动建表
+ */
+export async function initDatabase(db: D1Database): Promise<void> {
+  // D1 的 exec 方法支持批量执行多条 SQL
+  await db.exec(SCHEMA_SQL);
+}

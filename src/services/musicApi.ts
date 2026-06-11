@@ -181,12 +181,22 @@ export interface ChartSong {
   duration: number;
 }
 
-// 获取当前周数作为缓存 key
+// 获取基于周日的缓存 key，确保排行榜在周日午夜更新
 function getWeekKey(): string {
   const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 1);
-  const week = Math.ceil(((now.getTime() - start.getTime()) / 86400000 + start.getDay() + 1) / 7);
-  return `${now.getFullYear()}-W${week}`;
+  // Get the most recent Sunday (or today if Sunday)
+  const day = now.getDay(); // 0=Sun, 1=Mon, ...
+  const sunday = new Date(now);
+  sunday.setDate(now.getDate() - day);
+  const y = sunday.getFullYear();
+  const m = String(sunday.getMonth() + 1).padStart(2, '0');
+  const d = String(sunday.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function getDayKey(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 // 从 localStorage 读取每周缓存
@@ -211,9 +221,9 @@ function setCachedChart(playlistId: string, songs: ChartSong[]): void {
   }
 }
 
-export async function getChartSongs(playlistId: string, limit: number = 20, keyword?: string): Promise<ChartSong[]> {
+export async function getChartSongs(playlistId: string, limit: number = 30, keyword?: string, forceRefresh: boolean = false): Promise<ChartSong[]> {
   // 先查缓存
-  const cached = getCachedChart(playlistId);
+  const cached = !forceRefresh && getCachedChart(playlistId);
   if (cached && cached.length > 0) return cached;
 
   try {
@@ -341,6 +351,36 @@ export async function getHotSongs(limit: number = 20, forceRefresh: boolean = fa
     emitToast("网络连接失败", "error");
     return [];
   }
+}
+
+export function clearChartCache(playlistId?: string): void {
+  try {
+    if (playlistId) {
+      // Remove all cache entries for this playlistId
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(`chart_${playlistId}_`)) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    } else {
+      // Clear all chart caches
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('chart_')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    }
+  } catch { /* ignore */ }
+}
+
+export function clearHotSongsCache(): void {
+  clearChartCache(HOT_CHART_PLAYLIST_ID);
 }
 
 export interface LyricLine {
@@ -562,6 +602,38 @@ export const PLAYLIST_ALBUMS: PlaylistAlbum[] = [
     keyword: "驾驶",
     accent: "#0EA5E9",
   },
+  {
+    id: "pa_military",
+    name: "军旅战歌",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=military%20army%20songs%20march%20red%20star%20uniform&image_size=square_hd",
+    description: "铁血军魂 · 嘹亮战歌",
+    keyword: "军旅 军歌",
+    accent: "#B91C1C",
+  },
+  {
+    id: "pa_red",
+    name: "红色歌单",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=red%20song%20china%20flag%20patriotic%20golden%20star&image_size=square_hd",
+    description: "红色经典 · 峥嵘岁月",
+    keyword: "红歌 爱国",
+    accent: "#DC2626",
+  },
+  {
+    id: "pa_spring_gala",
+    name: "春晚新歌",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=spring%20festival%20gala%20chinese%20new%20year%20red%20lantern%20celebration&image_size=square_hd",
+    description: "春晚舞台 · 经典再现",
+    keyword: "春晚 春节",
+    accent: "#E11D48",
+  },
+  {
+    id: "pa_new_release",
+    name: "上新歌单",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=new%20music%20release%20fresh%20blue%20neon%20modern&image_size=square_hd",
+    description: "最新上线 · 抢先畅听",
+    keyword: "新歌 最新",
+    accent: "#2563EB",
+  },
 ];
 
 /** 根据歌单专辑 ID 拿到对应的预置元数据 */
@@ -659,6 +731,8 @@ const MOCK_ARTISTS: Artist[] = [
   { id: "ar6", name: "邓紫棋", avatar: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20female%20singer%20powerful%20portrait&image_size=square", songCount: 234, albumCount: 11 },
   { id: "ar7", name: "薛之谦", avatar: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20male%20singer%20moody%20portrait&image_size=square", songCount: 187, albumCount: 8 },
   { id: "ar8", name: "毛不易", avatar: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20male%20singer%20folk%20portrait&image_size=square", songCount: 134, albumCount: 6 },
+  { id: "ar9", name: "张学友", avatar: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=hongkong%20legendary%20singer%20portrait%20classic&image_size=square", songCount: 389, albumCount: 18 },
+  { id: "ar10", name: "王力宏", avatar: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=asian%20male%20singer%20talented%20portrait&image_size=square", songCount: 276, albumCount: 12 },
 ];
 
 const MOCK_ALBUMS: Album[] = [
@@ -817,6 +891,8 @@ export async function getHotArtists(limit: number = 10): Promise<HotArtist[]> {
     ar7: { heat: 5872341, trend: "stable" }, // 薛之谦
     ar4: { heat: 4987621, trend: "up" }, // 李荣浩
     ar8: { heat: 4523867, trend: "down" }, // 毛不易
+    ar9: { heat: 4231985, trend: "stable" }, // 张学友
+    ar10: { heat: 3847291, trend: "up" }, // 王力宏
   };
 
   return MOCK_ARTISTS.filter((a) => heatMap[a.id])

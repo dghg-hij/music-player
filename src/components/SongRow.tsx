@@ -145,7 +145,7 @@ const SongRow = memo(function SongRow({
 
   return (
     <div
-      className={`group relative flex items-center gap-2 px-sp-sm py-sp-sm rounded-btn-icon text-left transition-all duration-200 cursor-pointer ${
+      className={`group relative flex items-center gap-1 sm:gap-2 px-1 sm:px-sp-sm py-sp-sm rounded-btn-icon text-left transition-all duration-200 cursor-pointer ${
         isCurrent ? "song-row-active" : "hover:bg-card-soft"
       }`}
       role="button"
@@ -194,8 +194,8 @@ const SongRow = memo(function SongRow({
 
       {/* PRD 2.4 字体规范：歌名 Outfit 14px 600，歌手 DM Sans 12px 400；完整显示不做截断 */}
       <div className="flex-1 min-w-0">
-        <p className={`font-outfit text-body font-semibold flex items-start gap-1.5 break-words ${isCurrent ? "text-primary" : "text-primary"}`}>
-          <span className="whitespace-normal break-words">{song.title}</span>
+        <p className={`font-outfit text-body font-semibold flex items-center gap-1.5 ${isCurrent ? "text-primary" : "text-primary"}`}>
+          <span className="truncate">{song.title}</span>
           {song.isDelisted && (
             <span className="flex-shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-dm"
               style={{ background: "color-mix(in srgb, var(--error) 12%, transparent)", color: "var(--error)" }}>
@@ -203,7 +203,7 @@ const SongRow = memo(function SongRow({
             </span>
           )}
         </p>
-        <p className="font-dm text-caption text-soft whitespace-normal break-words">{song.artist}</p>
+        <p className="font-dm text-caption text-soft truncate">{song.artist}</p>
       </div>
 
       {song.isLoading && (
@@ -212,7 +212,7 @@ const SongRow = memo(function SongRow({
 
       {/* 操作按钮：播放 / 喜欢 / 加入待播放，其他收纳到「更多」菜单 */}
       <div
-        className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0 ml-auto pl-1"
+        className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0 ml-auto pl-1 [&_button]:p-0.5 sm:[&_button]:p-1"
         onClick={(e) => e.stopPropagation()}
       >
         <button

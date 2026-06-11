@@ -1,11 +1,12 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { ArrowLeft, Flame, Loader2, Play, ListPlus, ChevronRight } from "lucide-react";
 import { RANKINGS } from "../data/songs";
 import usePlayerStore from "../store/playerStore";
-import { getChartSongs } from "../services/musicApi";
+import { getChartSongs, clearChartCache } from "../services/musicApi";
 import SongRow from "../components/SongRow";
 import BatchActions from "../components/BatchActions";
+import PullToRefresh from "../components/PullToRefresh";
 import type { Song } from "../types";
 
 export default function RankingPage() {
@@ -16,6 +17,11 @@ export default function RankingPage() {
 
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const handleRefresh = useCallback(() => {
+    clearChartCache();
+    setRefreshKey((k) => k + 1);
+  }, []);
 
   const ranking = RANKINGS.find((r) => r.id === id) ?? RANKINGS[0];
 
@@ -50,7 +56,7 @@ export default function RankingPage() {
     return () => {
       cancelled = true;
     };
-  }, [ranking]);
+  }, [ranking, refreshKey]);
 
   const handlePlayAll = () => {
     if (songs.length === 0) return;
@@ -74,7 +80,8 @@ export default function RankingPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <PullToRefresh onRefresh={handleRefresh}>
+    <div className="space-y-6" key={refreshKey}>
       {/* 头部：榜单标题 + 描述 */}
       <div
         className="relative overflow-hidden rounded-3xl p-6 md:p-8"
@@ -217,5 +224,6 @@ export default function RankingPage() {
       </div>
       </div>
     </div>
+    </PullToRefresh>
   );
 }

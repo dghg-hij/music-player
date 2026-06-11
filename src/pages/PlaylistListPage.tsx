@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -16,6 +16,7 @@ import {
 import usePlayerStore from "../store/playerStore";
 import SongRow from "../components/SongRow";
 import BatchActions from "../components/BatchActions";
+import PullToRefresh from "../components/PullToRefresh";
 import type { Song } from "../types";
 
 export default function PlaylistListPage() {
@@ -27,6 +28,10 @@ export default function PlaylistListPage() {
   const album = id ? getPlaylistAlbumById(id) : null;
   const [songs, setSongs] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const handleRefresh = useCallback(() => {
+    setRefreshKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -56,7 +61,7 @@ export default function PlaylistListPage() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, refreshKey]);
 
   if (!album) {
     return (
@@ -80,7 +85,8 @@ export default function PlaylistListPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <PullToRefresh onRefresh={handleRefresh}>
+    <div className="space-y-6" key={refreshKey}>
       {/* Hero 头部 */}
       <div
         className="relative overflow-hidden rounded-3xl p-6 md:p-8"
@@ -183,6 +189,7 @@ export default function PlaylistListPage() {
         )}
       </div>
     </div>
+    </PullToRefresh>
   );
 }
 

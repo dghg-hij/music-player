@@ -11,14 +11,16 @@ import {
   Loader2,
   PlayCircle,
   Clock,
+  RefreshCw,
 } from "lucide-react";
 import { RANKINGS } from "../data/songs";
 import usePlayerStore from "../store/playerStore";
 import SongRow from "../components/SongRow";
 import BatchActions from "../components/BatchActions";
 import RecommendSection from "../components/RecommendSection";
-import { getChartSongs } from "../services/musicApi";
-import { useEffect, useRef, useState } from "react";
+import PullToRefresh from "../components/PullToRefresh";
+import { getChartSongs, clearChartCache, clearHotSongsCache } from "../services/musicApi";
+import { useEffect, useRef, useState, useCallback } from "react";
 import type { Song } from "../types";
 
 interface QuickAccessItem {
@@ -94,6 +96,7 @@ function RankingsSection() {
   const [loading, setLoading] = useState(false);
 
   const active = RANKINGS.find((r) => r.id === activeId) ?? RANKINGS[0];
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!active) return;
@@ -145,6 +148,19 @@ function RankingsSection() {
           >
             <Clock size={10} /> 一周更新一次
           </span>
+          <button
+            onClick={async () => {
+              setRefreshing(true);
+              clearChartCache();
+              setPreviewSongs([]);
+              // Re-fetch will happen via useEffect
+              setTimeout(() => setRefreshing(false), 500);
+            }}
+            className="clickable-pill font-dm text-xs text-soft hover:text-primary transition-colors px-2 py-1 ml-auto"
+            title="刷新榜单"
+          >
+            <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+          </button>
         </div>
       </div>
 
@@ -235,6 +251,12 @@ export default function HomePage() {
   const hotSongs = usePlayerStore((s) => s.hotSongs);
   const isLoadingHot = usePlayerStore((s) => s.isLoadingHot);
   const fetchHotSongs = usePlayerStore((s) => s.fetchHotSongs);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const handleRefresh = useCallback(() => {
+    clearHotSongsCache();
+    fetchHotSongs(true);
+    setRefreshKey((k) => k + 1);
+  }, [fetchHotSongs]);
 
   // 快捷入口按钮处理：锚点 → 平滑滚动；路由 → 跳转
   const handleQuickAccess = (item: QuickAccessItem) => {
@@ -262,7 +284,8 @@ export default function HomePage() {
   }, [location.hash]);
 
   return (
-    <div className="space-y-10">
+    <PullToRefresh onRefresh={handleRefresh}>
+    <div className="space-y-10" key={refreshKey}>
       {/* 搜索框 - 圆角卡片式布局 */}
       <div
         className="flex items-center gap-2 rounded-card px-4 py-3 glass-subtle"
@@ -361,7 +384,7 @@ export default function HomePage() {
             热门推荐
           </h2>
           <button
-            onClick={() => fetchHotSongs(true)}
+            onClick={() => { clearHotSongsCache(); fetchHotSongs(true); }}
             className="font-dm text-xs text-soft hover:text-primary transition-colors clickable-pill px-3 py-1.5"
           >
             刷新
@@ -404,5 +427,6 @@ export default function HomePage() {
         </div>
       </section>
     </div>
+    </PullToRefresh>
   );
 }

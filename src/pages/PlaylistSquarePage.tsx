@@ -1,12 +1,20 @@
+import { useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, ListMusic, ChevronRight } from "lucide-react";
 import { PLAYLIST_ALBUMS } from "../services/musicApi";
+import PullToRefresh from "../components/PullToRefresh";
 
 export default function PlaylistSquarePage() {
   const navigate = useNavigate();
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshKey((k) => k + 1);
+  }, []);
 
   return (
-    <div className="space-y-6">
+    <PullToRefresh onRefresh={handleRefresh}>
+    <div className="space-y-6" key={refreshKey}>
       {/* 头部 */}
       <div className="flex items-center gap-3">
         <button
@@ -89,5 +97,6 @@ export default function PlaylistSquarePage() {
         </div>
       </section>
     </div>
+    </PullToRefresh>
   );
 }
