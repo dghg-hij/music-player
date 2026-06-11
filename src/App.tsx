@@ -177,7 +177,7 @@ export default function App() {
         <ApiToastListener />
         <PostLoginDataFetcher />
 
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-8 py-6 pb-32">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 md:px-8 py-3 sm:py-6 pb-24 sm:pb-32">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/category/:id" element={<CategoryPage />} />

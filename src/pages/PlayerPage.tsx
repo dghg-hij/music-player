@@ -156,9 +156,9 @@ export default function PlayerPage() {
   const isDownloaded = downloads.includes(currentSong.id);
 
   return (
-    <div className="min-h-[calc(100vh-9rem)] flex flex-col">
+    <div className="min-h-[calc(100vh-7rem)] sm:min-h-[calc(100vh-9rem)] flex flex-col">
       {/* 顶部导航栏 */}
-      <div className="flex items-center justify-between mb-sp-lg">
+      <div className="flex items-center justify-between mb-sp-md sm:mb-sp-lg">
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-btn-pill text-caption font-dm text-soft hover:text-primary transition-colors"
@@ -256,7 +256,7 @@ export default function PlayerPage() {
       {/* 主体区域：播放器 - 圆角卡片式布局 + 毛玻璃效果 */}
       <div className="flex-1">
         <div
-          className="relative rounded-card p-sp-xl md:p-sp-2xl flex flex-col glass-strong"
+          className="relative rounded-card p-sp-lg sm:p-sp-xl md:p-sp-2xl flex flex-col glass-strong"
         >
           {/* 背景渐变装饰 - 更柔和的清新风格 */}
           <div
@@ -266,10 +266,10 @@ export default function PlayerPage() {
             }}
           />
 
-          <div className="relative flex-1 flex flex-col items-center justify-center gap-sp-xl md:gap-sp-2xl min-h-[320px] md:min-h-[400px]">
+          <div className="relative flex-1 flex flex-col items-center justify-center gap-4 sm:gap-sp-xl md:gap-sp-2xl min-h-0 sm:min-h-[320px] md:min-h-[400px]">
             {/* 封面图 - 播放区突出 */}
             <div
-              className="relative w-48 h-48 md:w-64 md:h-64 lg:w-72 lg:h-72 rounded-card overflow-hidden flex-shrink-0"
+              className="relative w-40 h-40 sm:w-52 sm:h-52 md:w-64 md:h-64 lg:w-72 lg:h-72 rounded-card overflow-hidden flex-shrink-0"
               style={{
                 boxShadow: `0 8px 40px -4px color-mix(in srgb, var(--accent) 30%, transparent), 0 4px 20px color-mix(in srgb, var(--accent-2) 20%, transparent)`,
               }}
@@ -304,11 +304,11 @@ export default function PlayerPage() {
             </div>
 
             {/* 歌曲信息 - PRD 2.4 字体规范 */}
-            <div className="text-center max-w-md">
-              <h1 className="font-outfit text-title-lg text-primary leading-tight truncate">
+            <div className="text-center max-w-md w-full px-2">
+              <h1 className="font-outfit text-title-sm sm:text-title-lg text-primary leading-tight truncate">
                 {currentSong.title}
               </h1>
-              <p className="font-dm text-body text-soft mt-1.5 truncate">
+              <p className="font-dm text-caption sm:text-body text-soft mt-1 sm:mt-1.5 truncate">
                 {currentSong.artist}
               </p>
               {currentSong.isLoading && (
@@ -354,10 +354,10 @@ export default function PlayerPage() {
             </div>
 
             {/* 播放控制按钮 - PRD 2.6 */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={togglePlayMode}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-soft hover:text-primary transition-colors"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-soft hover:text-primary transition-colors"
                 title={PlayModeLabel({ mode: playMode })}
                 aria-label={PlayModeLabel({ mode: playMode })}
               >
@@ -365,14 +365,15 @@ export default function PlayerPage() {
               </button>
               <button
                 onClick={playPrev}
-                className="w-12 h-12 rounded-full flex items-center justify-center text-primary hover:bg-card-soft transition-colors"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-primary hover:bg-card-soft transition-colors"
                 aria-label="上一首"
               >
-                <SkipBack size={22} strokeWidth={2} />
+                <SkipBack size={20} strokeWidth={2} className="sm:hidden" />
+                <SkipBack size={22} strokeWidth={2} className="hidden sm:block" />
               </button>
               <button
                 onClick={togglePlay}
-                className="w-16 h-16 rounded-full flex items-center justify-center text-white transition-transform active:scale-95"
+                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white transition-transform active:scale-95"
                 style={{
                   background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
                   boxShadow: "0 4px 24px -4px color-mix(in srgb, var(--accent) 50%, transparent)",
@@ -380,22 +381,28 @@ export default function PlayerPage() {
                 aria-label={isPlaying ? "暂停" : "播放"}
               >
                 {isPlaying ? (
-                  <Pause size={28} strokeWidth={2} fill="white" />
+                  <Pause size={24} strokeWidth={2} fill="white" className="sm:hidden" />
                 ) : (
-                  <Play size={28} strokeWidth={2} fill="white" className="ml-1" />
+                  <Play size={24} strokeWidth={2} fill="white" className="ml-1 sm:hidden" />
+                )}
+                {isPlaying ? (
+                  <Pause size={28} strokeWidth={2} fill="white" className="hidden sm:block" />
+                ) : (
+                  <Play size={28} strokeWidth={2} fill="white" className="ml-1 hidden sm:block" />
                 )}
               </button>
               <button
                 onClick={playNext}
-                className="w-12 h-12 rounded-full flex items-center justify-center text-primary hover:bg-card-soft transition-colors"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-primary hover:bg-card-soft transition-colors"
                 aria-label="下一首"
               >
-                <SkipForward size={22} strokeWidth={2} />
+                <SkipForward size={20} strokeWidth={2} className="sm:hidden" />
+                <SkipForward size={22} strokeWidth={2} className="hidden sm:block" />
               </button>
               {/* 歌词按钮 */}
               <button
                 onClick={() => setShowLyrics(true)}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-soft hover:text-primary transition-colors"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-soft hover:text-primary transition-colors"
                 aria-label="歌词"
                 title="歌词"
               >
@@ -567,12 +574,17 @@ export default function PlayerPage() {
           </div>
 
           {/* 底部：音量 + 倍速控制 */}
-          <div className="relative flex flex-wrap items-center gap-x-4 gap-y-2 mt-sp-xl pt-sp-lg border-t border-default">
-            <div className="flex items-center gap-2 flex-1 min-w-[160px]">
+          <div className="relative flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-2 mt-sp-lg sm:mt-sp-xl pt-sp-md sm:pt-sp-lg border-t border-default">
+            <div className="flex items-center gap-2 flex-1 min-w-[140px] sm:min-w-[160px]">
               {volume === 0 ? (
-                <VolumeX size={16} className="text-soft flex-shrink-0" />
+                <VolumeX size={14} className="text-soft flex-shrink-0 sm:hidden" />
               ) : (
-                <Volume2 size={16} className="text-soft flex-shrink-0" />
+                <Volume2 size={14} className="text-soft flex-shrink-0 sm:hidden" />
+              )}
+              {volume === 0 ? (
+                <VolumeX size={16} className="text-soft flex-shrink-0 hidden sm:block" />
+              ) : (
+                <Volume2 size={16} className="text-soft flex-shrink-0 hidden sm:block" />
               )}
               <input
                 type="range"
@@ -582,7 +594,7 @@ export default function PlayerPage() {
                 onChange={(e) => changeVolume(parseInt(e.target.value, 10))}
                 className="flex-1"
               />
-              <span className="font-dm text-mono text-soft w-8 text-right">{volume}</span>
+              <span className="font-dm text-mono text-soft w-7 sm:w-8 text-right">{volume}</span>
             </div>
             <div className="flex items-center gap-1">
               {[0.5, 0.75, 1, 1.25, 1.5, 2].map((rate) => (
@@ -615,16 +627,16 @@ export default function PlayerPage() {
           className="fixed inset-0 z-50 flex flex-col animate-fade-in glass-strong"
         >
           {/* 顶部栏 */}
-          <div className="flex items-center justify-between px-sp-xl pt-sp-xl pb-2">
+          <div className="flex items-center justify-between px-sp-md sm:px-sp-xl pt-sp-md sm:pt-sp-xl pb-2">
             <button
               onClick={() => setShowLyrics(false)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-btn-pill text-caption font-dm text-soft hover:text-primary transition-colors"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-btn-pill text-caption font-dm text-soft hover:text-primary transition-colors"
             >
-              <ChevronDown size={16} /> 收起歌词
+              <ChevronDown size={16} /> <span className="hidden xs:inline sm:inline">收起歌词</span>
             </button>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <div
-                className="w-10 h-10 rounded-btn-icon overflow-hidden flex-shrink-0"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-btn-icon overflow-hidden flex-shrink-0"
                 style={{
                   background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
                 }}
@@ -641,26 +653,26 @@ export default function PlayerPage() {
                   </div>
                 )}
               </div>
-              <div className="min-w-0 max-w-[200px]">
-                <p className="font-outfit text-title-sm text-primary truncate">{currentSong.title}</p>
-                <p className="font-dm text-caption text-soft truncate">{currentSong.artist}</p>
+              <div className="min-w-0 max-w-[140px] sm:max-w-[200px]">
+                <p className="font-outfit text-caption sm:text-title-sm text-primary truncate">{currentSong.title}</p>
+                <p className="font-dm text-mono sm:text-caption text-soft truncate">{currentSong.artist}</p>
               </div>
             </div>
-            <div className="w-20" />
+            <div className="w-14 sm:w-20" />
           </div>
 
           {/* 歌词区域 */}
-          <div className="flex-1 min-h-0 mx-auto w-full max-w-2xl px-sp-xl">
+          <div className="flex-1 min-h-0 mx-auto w-full max-w-2xl px-sp-md sm:px-sp-xl">
             <Lyrics lyrics={lyrics} currentLyricIndex={currentLyricIndex} onSeek={seek} />
           </div>
 
           {/* 底部迷你控制栏 */}
           <div
-            className="px-sp-xl py-3 flex flex-col gap-2"
+            className="px-sp-md sm:px-sp-xl py-2.5 sm:py-3 flex flex-col gap-2"
             style={{ borderTop: "1px solid var(--border)" }}
           >
             <div className="flex items-center gap-2">
-              <span className="font-dm text-mono text-soft w-10">{formatTime(currentTime)}</span>
+              <span className="font-dm text-mono text-soft w-9 sm:w-10">{formatTime(currentTime)}</span>
               <div className="flex-1 h-1.5 rounded-full cursor-pointer"
                 style={{ background: "var(--range-track)" }}
                 onClick={(e) => {
@@ -677,34 +689,41 @@ export default function PlayerPage() {
                   }}
                 />
               </div>
-              <span className="font-dm text-mono text-soft w-10 text-right">{formatTime(duration)}</span>
+              <span className="font-dm text-mono text-soft w-9 sm:w-10 text-right">{formatTime(duration)}</span>
             </div>
-            <div className="flex items-center justify-center gap-6">
+            <div className="flex items-center justify-center gap-4 sm:gap-6">
               <button
                 onClick={playPrev}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-soft hover:text-primary transition-colors"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-soft hover:text-primary transition-colors"
               >
-                <SkipBack size={20} strokeWidth={2} />
+                <SkipBack size={18} strokeWidth={2} className="sm:hidden" />
+                <SkipBack size={20} strokeWidth={2} className="hidden sm:block" />
               </button>
               <button
                 onClick={togglePlay}
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white transition-transform active:scale-95"
+                className="w-12 h-12 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white transition-transform active:scale-95"
                 style={{
                   background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
                   boxShadow: "0 4px 20px -2px color-mix(in srgb, var(--accent) 40%, transparent)",
                 }}
               >
                 {isPlaying ? (
-                  <Pause size={22} strokeWidth={2} fill="white" />
+                  <Pause size={20} strokeWidth={2} fill="white" className="sm:hidden" />
                 ) : (
-                  <Play size={22} strokeWidth={2} fill="white" className="ml-0.5" />
+                  <Play size={20} strokeWidth={2} fill="white" className="ml-0.5 sm:hidden" />
+                )}
+                {isPlaying ? (
+                  <Pause size={22} strokeWidth={2} fill="white" className="hidden sm:block" />
+                ) : (
+                  <Play size={22} strokeWidth={2} fill="white" className="ml-0.5 hidden sm:block" />
                 )}
               </button>
               <button
                 onClick={playNext}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-soft hover:text-primary transition-colors"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-soft hover:text-primary transition-colors"
               >
-                <SkipForward size={20} strokeWidth={2} />
+                <SkipForward size={18} strokeWidth={2} className="sm:hidden" />
+                <SkipForward size={20} strokeWidth={2} className="hidden sm:block" />
               </button>
             </div>
           </div>
