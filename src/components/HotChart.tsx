@@ -1,5 +1,6 @@
-import { Flame, Loader2, TrendingUp, ListPlus } from "lucide-react";
+import { Flame, Loader2, TrendingUp, ListPlus, Play, Pause } from "lucide-react";
 import usePlayerStore from "../store/playerStore";
+import { audioControls } from "../hooks/useAudioPlayer";
 
 function formatHeat(n: number): string {
   if (n >= 10000) return (n / 10000).toFixed(1) + "万";
@@ -19,6 +20,22 @@ export default function HotChart() {
   const playHotSong = usePlayerStore((s) => s.playHotSong);
   const fetchHotSongs = usePlayerStore((s) => s.fetchHotSongs);
   const addToQueue = usePlayerStore((s) => s.addToQueue);
+  const currentSongIndex = usePlayerStore((s) => s.currentSongIndex);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
+
+  const isCurrentSong = (id: number) => {
+    const idx = usePlayerStore.getState().songs.findIndex((s) => s.id === id);
+    return idx === currentSongIndex;
+  };
+
+  const handlePlayClick = (e: React.MouseEvent, song: import("../types").Song) => {
+    e.stopPropagation();
+    if (isCurrentSong(song.id)) {
+      audioControls.togglePlay();
+      return;
+    }
+    playHotSong(song);
+  };
 
   if (isLoadingHot) {
     return (
@@ -55,57 +72,76 @@ export default function HotChart() {
         </span>
       </div>
       <div className="flex-1 overflow-y-auto space-y-1 pr-1">
-        {hotSongs.map((song, index) => (
-          <div
-            key={song.id}
-            onClick={() => playHotSong(song)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 text-white/60 hover:bg-white/5 hover:text-white group cursor-pointer"
-          >
-            <span
-              className={`w-6 h-6 rounded-md flex items-center justify-center text-xs flex-shrink-0 ${getRankStyle(index)}`}
+        {hotSongs.map((song, index) => {
+          const isCurrent = isCurrentSong(song.id);
+          return (
+            <div
+              key={song.id}
+              onClick={() => playHotSong(song)}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 text-white/60 hover:bg-white/5 hover:text-white group cursor-pointer"
             >
-              {index + 1}
-            </span>
-            {song.cover ? (
-              <img
-                src={song.cover}
-                alt=""
-                className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
-              />
-            ) : (
-              <div
-                className="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center"
-                style={{
-                  background: "linear-gradient(135deg, #A855F7, #F97316)",
-                }}
+              <span
+                className={`w-6 h-6 rounded-md flex items-center justify-center text-xs flex-shrink-0 ${getRankStyle(index)}`}
               >
-                <span className="text-white/50 text-xs">♪</span>
+                {index + 1}
+              </span>
+              {song.cover ? (
+                <img
+                  src={song.cover}
+                  alt=""
+                  className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                />
+              ) : (
+                <div
+                  className="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center"
+                  style={{
+                    background: "linear-gradient(135deg, #A855F7, #F97316)",
+                  }}
+                >
+                  <span className="text-white/50 text-xs">♪</span>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-outfit text-sm truncate">{song.title}</p>
+                <p className="font-dm text-xs text-white/40 truncate">
+                  {song.artist}
+                </p>
               </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="font-outfit text-sm truncate">{song.title}</p>
-              <p className="font-dm text-xs text-white/40 truncate">
-                {song.artist}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={(e) => { e.stopPropagation(); addToQueue(song); }}
-                className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-full flex items-center justify-center text-white/30 hover:text-accent hover:bg-accent/10 transition-all duration-200"
-                aria-label="加入待播放"
-                title="加入待播放"
-              >
-                <ListPlus size={14} />
-              </button>
-              <div className="flex items-center gap-1">
-                <Flame size={10} className="text-orange-400/60" />
-                <span className="font-dm text-[10px] text-orange-400/80">
-                  {formatHeat(song.heat || 0)}
-                </span>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={(e) => handlePlayClick(e, song)}
+                  className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 ${
+                    isCurrent
+                      ? "text-accent opacity-100"
+                      : "text-white/30 hover:text-accent hover:bg-accent/10 opacity-0 group-hover:opacity-100"
+                  }`}
+                  aria-label={isCurrent && isPlaying ? "暂停" : "播放"}
+                  title={isCurrent && isPlaying ? "暂停" : "播放"}
+                >
+                  {isCurrent && isPlaying ? (
+                    <Pause size={14} fill="currentColor" />
+                  ) : (
+                    <Play size={14} fill="currentColor" />
+                  )}
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); addToQueue(song); }}
+                  className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-full flex items-center justify-center text-white/30 hover:text-accent hover:bg-accent/10 transition-all duration-200"
+                  aria-label="加入待播放"
+                  title="加入待播放"
+                >
+                  <ListPlus size={14} />
+                </button>
+                <div className="flex items-center gap-1">
+                  <Flame size={10} className="text-orange-400/60" />
+                  <span className="font-dm text-[10px] text-orange-400/80">
+                    {formatHeat(song.heat || 0)}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

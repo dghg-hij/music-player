@@ -1,23 +1,28 @@
 import { useEffect, useRef } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { ThemeSync } from "./components/ThemeModeToggle";
 import usePlayerStore from "./store/playerStore";
 import useAuthStore from "./store/authStore";
 import useAudioPlayer, { audioControls } from "./hooks/useAudioPlayer";
 import TopNav from "./components/TopNav";
 import MiniPlayer from "./components/MiniPlayer";
 import GlobalToast from "./components/GlobalToast";
+import BottomNav from "./components/BottomNav";
 import HomePage from "./pages/HomePage";
 import CategoryPage from "./pages/CategoryPage";
 import LibraryPage from "./pages/LibraryPage";
 import MyPage from "./pages/MyPage";
 import PlayerPage from "./pages/PlayerPage";
 import SearchPage from "./pages/SearchPage";
-import { RankingListPage } from "./pages/RankingPage";
 import RankingPage from "./pages/RankingPage";
+import HotArtistsPage from "./pages/HotArtistsPage";
 import RecommendPage from "./pages/RecommendPage";
+import PlaylistSquarePage from "./pages/PlaylistSquarePage";
+import PlaylistListPage from "./pages/PlaylistListPage";
 import { ArtistDetailPage, AlbumDetailPage, PlaylistDetailPage } from "./pages/DetailPages";
 import MyPlaylistDetailPage from "./pages/MyPlaylistDetailPage";
 import SettingsPage from "./pages/SettingsPage";
+import LoginPage from "./pages/LoginPage";
 import NetworkStatus from "./components/NetworkStatus";
 import OnboardingGuide from "./components/OnboardingGuide";
 
@@ -169,6 +174,7 @@ export default function App() {
     <BrowserRouter basename="/music-player">
       <div className="min-h-screen flex flex-col">
         <TopNav />
+        <ThemeSync />
         <AudioController />
         <Initializer />
         <SystemThemeListener />
@@ -177,17 +183,21 @@ export default function App() {
         <ApiToastListener />
         <PostLoginDataFetcher />
 
-        <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 md:px-8 py-3 sm:py-6 pb-24 sm:pb-32">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 md:px-8 py-3 sm:py-6 pb-28 sm:pb-32 md:pb-32">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/category/:id" element={<CategoryPage />} />
-            <Route path="/ranking" element={<RankingListPage />} />
+            <Route path="/ranking" element={<Navigate to="/ranking/hot" replace />} />
             <Route path="/ranking/:id" element={<RankingPage />} />
+            <Route path="/hot-artists" element={<HotArtistsPage />} />
+            <Route path="/playlist-square" element={<PlaylistSquarePage />} />
+            <Route path="/playlist-album/:id" element={<PlaylistListPage />} />
             <Route path="/library" element={<LibraryPage />} />
             <Route path="/my" element={<MyPage />} />
             <Route path="/play" element={<PlayerPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/recommend" element={<RecommendPage />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/artist/:id" element={<ArtistDetailPage />} />
             <Route path="/album/:id" element={<AlbumDetailPage />} />
             <Route path="/playlist/:id" element={<PlaylistDetailPage />} />
@@ -205,6 +215,7 @@ export default function App() {
         </main>
 
         <MiniPlayer />
+        <BottomNav />
         <NetworkStatus />
         <GlobalToast />
         <OnboardingGuide />

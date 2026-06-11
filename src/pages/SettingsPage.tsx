@@ -43,6 +43,7 @@ import {
 } from "../types";
 import type { ThemePreference } from "../types";
 import { submitFeedback, checkForUpdate } from "../services/settingsApi";
+import ThemeModeToggle from "../components/ThemeModeToggle";
 
 type SectionId = "playback" | "ui" | "account" | "about";
 
@@ -66,23 +67,26 @@ function SettingRow({
   title,
   description,
   children,
+  stacked,
 }: {
   title: string;
   description?: string;
   children: React.ReactNode;
+  /** 强制垂直堆叠（手机端控件较宽时使用） */
+  stacked?: boolean;
 }) {
   return (
     <div
-      className="flex items-center justify-between gap-4 p-4 rounded-2xl"
+      className={`flex ${stacked ? "flex-col" : "flex-col sm:flex-row sm:items-center"} justify-between gap-3 sm:gap-4 p-4 rounded-2xl`}
       style={{ background: "var(--card-soft)", border: "1px solid var(--border)" }}
     >
-      <div className="min-w-0 flex-1">
-        <p className="font-outfit font-semibold text-sm text-primary">{title}</p>
+      <div className="min-w-0 sm:flex-1">
+        <p className="font-outfit font-semibold text-sm text-primary leading-relaxed">{title}</p>
         {description && (
           <p className="font-dm text-xs text-soft mt-1 leading-relaxed">{description}</p>
         )}
       </div>
-      <div className="flex-shrink-0">{children}</div>
+      <div className={`flex-shrink-0 ${stacked ? "w-full" : ""}`}>{children}</div>
     </div>
   );
 }
@@ -133,7 +137,7 @@ function SegmentedControl<T extends string | number>({
     <div
       role="group"
       aria-label={ariaLabel}
-      className="inline-flex p-1 rounded-full"
+      className="inline-flex p-1 rounded-full w-full sm:w-auto flex-wrap"
       style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
     >
       {options.map((opt) => {
@@ -142,7 +146,7 @@ function SegmentedControl<T extends string | number>({
           <button
             key={String(opt.value)}
             onClick={() => onChange(opt.value)}
-            className="px-3 py-1.5 rounded-full text-xs font-dm font-medium transition-all"
+            className="flex-1 sm:flex-initial px-3 py-1.5 rounded-full text-xs font-dm font-medium transition-all whitespace-nowrap"
             style={{
               background: active
                 ? "linear-gradient(135deg, var(--accent), var(--accent-2))"
@@ -176,7 +180,7 @@ function Slider({
   ariaLabel?: string;
 }) {
   return (
-    <div className="flex items-center gap-3 min-w-[200px]">
+    <div className="flex items-center gap-3 w-full sm:min-w-[200px]">
       <input
         type="range"
         aria-label={ariaLabel}
@@ -185,9 +189,9 @@ function Slider({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full"
+        className="flex-1 min-w-0"
       />
-      <span className="font-dm text-xs text-primary min-w-[56px] text-right tabular-nums">
+      <span className="font-dm text-xs text-primary min-w-[56px] text-right tabular-nums flex-shrink-0">
         {format ? format(value) : value}
       </span>
     </div>
@@ -352,7 +356,7 @@ function PlaybackSection() {
         title="缓存大小"
         description={`已用约 ${formatCacheSize(Math.round(cacheUsed * 1024))} / 上限 ${formatCacheSize(cacheSize)}。超出后自动清理最早的非收藏歌曲。`}
       >
-        <div className="flex flex-col items-end gap-2 w-full md:w-[280px]">
+        <div className="flex flex-col items-stretch gap-2 w-full md:w-[280px]">
           <Slider
             value={cacheSize}
             min={CACHE_SIZE_MIN_MB}
@@ -362,7 +366,7 @@ function PlaybackSection() {
             format={formatCacheSize}
             ariaLabel="缓存大小"
           />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-end flex-wrap">
             <button
               onClick={() => {
                 refreshCacheUsage();
@@ -458,7 +462,10 @@ function UISection() {
         title="主题"
         description="跟随系统会监听操作系统的深色/浅色设置自动切换。"
       >
-        <div className="inline-flex p-1 rounded-full" style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
+        <div
+          className="inline-flex p-1 rounded-full w-full sm:w-auto"
+          style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
+        >
           {themeOptions.map((opt) => {
             const Icon = opt.icon;
             const active = themePreference === opt.value;
@@ -466,7 +473,7 @@ function UISection() {
               <button
                 key={opt.value}
                 onClick={() => setThemePreference(opt.value)}
-                className="px-3 py-1.5 rounded-full text-xs font-dm font-medium transition-all inline-flex items-center gap-1.5"
+                className="flex-1 sm:flex-initial px-3 py-1.5 rounded-full text-xs font-dm font-medium transition-all inline-flex items-center justify-center gap-1.5 whitespace-nowrap"
                 style={{
                   background: active
                     ? "linear-gradient(135deg, var(--accent), var(--accent-2))"
@@ -481,6 +488,13 @@ function UISection() {
             );
           })}
         </div>
+      </SettingRow>
+
+      <SettingRow
+        title="日/夜模式与配色"
+        description="切换日间或夜间，并选择对应色系。"
+      >
+        <ThemeModeToggle />
       </SettingRow>
 
       <SettingRow

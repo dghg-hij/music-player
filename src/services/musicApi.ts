@@ -454,6 +454,129 @@ export function parseLRC(lrc: string): LyricLine[] {
 // 模块 3：音乐搜索与乐库 - 扩展 API
 // ============================================
 
+// 歌单广场 - 预置歌单专辑
+export interface PlaylistAlbum {
+  id: string;
+  name: string;
+  cover: string;
+  description: string;
+  /** 用于搜索真实歌曲的关键词 */
+  keyword: string;
+  accent: string;
+}
+
+export const PLAYLIST_ALBUMS: PlaylistAlbum[] = [
+  {
+    id: "pa_ancient",
+    name: "古风歌单",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20ancient%20ink%20painting%20mountain%20moon%20elegant%20serene&image_size=square_hd",
+    description: "墨色山水 · 国韵悠长",
+    keyword: "古风",
+    accent: "#A855F7",
+  },
+  {
+    id: "pa_ancient_drama",
+    name: "古风影视歌单",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=chinese%20ancient%20palace%20costume%20drama%20moon%20lantern&image_size=square_hd",
+    description: "古装剧中的经典旋律",
+    keyword: "古风 影视",
+    accent: "#7C3AED",
+  },
+  {
+    id: "pa_modern_drama",
+    name: "现代影视歌单",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=modern%20movie%20soundtrack%20cinema%20purple%20lights%20dramatic&image_size=square_hd",
+    description: "影视剧 OST 经典",
+    keyword: "影视 OST",
+    accent: "#EC4899",
+  },
+  {
+    id: "pa_chinese_pop",
+    name: "华语流行经典",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=neon%20pop%20music%20concert%20lights%20vibrant%20orange&image_size=square_hd",
+    description: "华语流行 · 时代金曲",
+    keyword: "华语 流行",
+    accent: "#F97316",
+  },
+  {
+    id: "pa_folk",
+    name: "民谣诗与远方",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=acoustic%20guitar%20countryside%20warm%20sunset%20meadow&image_size=square_hd",
+    description: "诗与远方的民谣",
+    keyword: "民谣",
+    accent: "#22C55E",
+  },
+  {
+    id: "pa_rock",
+    name: "摇滚狂潮",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=rock%20electric%20guitar%20fire%20stage%20dark%20red&image_size=square_hd",
+    description: "热血澎湃的摇滚",
+    keyword: "摇滚",
+    accent: "#EF4444",
+  },
+  {
+    id: "pa_electronic",
+    name: "电子律动",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=synthwave%20electronic%20neon%20city%20night%20blue&image_size=square_hd",
+    description: "Synthwave 与 City Pop",
+    keyword: "电子",
+    accent: "#06B6D4",
+  },
+  {
+    id: "pa_rnb",
+    name: "R&B 慵懒周末",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=rnb%20jazz%20vintage%20lounge%20warm%20lights&image_size=square_hd",
+    description: "灵魂律动的慵懒午后",
+    keyword: "R&B",
+    accent: "#0EA5E9",
+  },
+  {
+    id: "pa_sleep",
+    name: "夜晚助眠轻音乐",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=sleep%20calm%20music%20night%20purple%20stars%20dream&image_size=square_hd",
+    description: "伴你入眠的轻柔旋律",
+    keyword: "轻音乐",
+    accent: "#8B5CF6",
+  },
+  {
+    id: "pa_workout",
+    name: "运动健身燃脂",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=sport%20workout%20music%20energetic%20red%20fire&image_size=square_hd",
+    description: "燃脂跑步的节奏鼓点",
+    keyword: "运动",
+    accent: "#F59E0B",
+  },
+  {
+    id: "pa_study",
+    name: "学习工作背景音",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=study%20focus%20lofi%20cozy%20desk%20warm&image_size=square_hd",
+    description: "专注力提升的轻音",
+    keyword: "学习",
+    accent: "#14B8A6",
+  },
+  {
+    id: "pa_drive",
+    name: "开车兜风必备",
+    cover: "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=driving%20road%20music%20open%20sky%20freedom%20blue&image_size=square_hd",
+    description: "一路向前的自由节拍",
+    keyword: "驾驶",
+    accent: "#0EA5E9",
+  },
+];
+
+/** 根据歌单专辑 ID 拿到对应的预置元数据 */
+export function getPlaylistAlbumById(id: string): PlaylistAlbum | null {
+  return PLAYLIST_ALBUMS.find((p) => p.id === id) || null;
+}
+
+/** 拉取歌单专辑下的歌曲（30 首） */
+export async function getPlaylistAlbumSongs(id: string): Promise<SearchResult[]> {
+  const album = getPlaylistAlbumById(id);
+  if (!album) return [];
+  return searchSongs(album.keyword, 30);
+}
+
+
 export interface Artist {
   id: string;
   name: string;
@@ -461,6 +584,16 @@ export interface Artist {
   songCount: number;
   albumCount: number;
   description?: string;
+}
+
+export interface HotArtist {
+  /** 1-based 周榜名次 */
+  rank: number;
+  artist: Artist;
+  /** 本周热度值（播放/收藏/分享加权） */
+  weeklyHeat: number;
+  /** 相比上周趋势 */
+  weeklyTrend: "up" | "down" | "stable";
 }
 
 export interface Album {
@@ -667,6 +800,34 @@ export async function getLibraryRankingSongs(
  */
 export async function getArtistDetail(artistId: string): Promise<Artist | null> {
   return MOCK_ARTISTS.find((a) => a.id === artistId) || null;
+}
+
+/**
+ * 获取本周最热歌手 - PRD 3.3.1 拓展
+ * 实际项目应从后端 /api/artist/hot?period=week 获取
+ */
+export async function getHotArtists(limit: number = 10): Promise<HotArtist[]> {
+  // 模拟本周热度数据（key: artistId）
+  const heatMap: Record<string, { heat: number; trend: HotArtist["weeklyTrend"] }> = {
+    ar1: { heat: 9826547, trend: "up" }, // 周杰伦
+    ar2: { heat: 8745231, trend: "stable" }, // 林俊杰
+    ar3: { heat: 7623478, trend: "up" }, // 陈奕迅
+    ar6: { heat: 6984521, trend: "up" }, // 邓紫棋
+    ar5: { heat: 6234789, trend: "down" }, // 周深
+    ar7: { heat: 5872341, trend: "stable" }, // 薛之谦
+    ar4: { heat: 4987621, trend: "up" }, // 李荣浩
+    ar8: { heat: 4523867, trend: "down" }, // 毛不易
+  };
+
+  return MOCK_ARTISTS.filter((a) => heatMap[a.id])
+    .sort((a, b) => (heatMap[b.id]?.heat ?? 0) - (heatMap[a.id]?.heat ?? 0))
+    .slice(0, limit)
+    .map((a, i) => ({
+      rank: i + 1,
+      artist: a,
+      weeklyHeat: heatMap[a.id]?.heat ?? 0,
+      weeklyTrend: heatMap[a.id]?.trend ?? "stable",
+    }));
 }
 
 /**

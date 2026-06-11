@@ -431,3 +431,65 @@ input[type="range"]::-moz-range-thumb {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ===== 移动端适配 ===== */
+
+/* 让滚动条更细且不占据空间 */
+@media (max-width: 767px) {
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    /* 防止 iOS Safari 弹性滚动时 fixed 元素跟着动 */
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* 底部安全区：保证内容不被底部导航遮挡 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  main {
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom)) !important;
+  }
+  @media (min-width: 768px) {
+    main {
+      padding-bottom: calc(8rem + env(safe-area-inset-bottom)) !important;
+    }
+  }
+}
+
+/* mini 播放器在手机端需要避让底部导航 */
+@media (max-width: 767px) {
+  .mini-player-bottom-adjust {
+    bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* 隐藏 hover 效果在手机端 */
+@media (hover: none) {
+  .group:hover .group-hover\:opacity-100 {
+    opacity: 1;
+  }
+}
+
+/* 防止移动端字号自动放大 */
+@media (max-width: 767px) {
+  input, select, textarea, button {
+    font-size: 16px;
+  }
+}
+
+/* 让 flex 容器在 iOS 上正确收缩 */
+.min-w-0 {
+  min-width: 0;
+}
+
+/* 列表项在窄屏的触控优化 */
+@media (max-width: 767px) {
+  .card-surface {
+    border-radius: 16px;
+  }
+}

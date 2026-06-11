@@ -1,4 +1,4 @@
-import { useState, memo, useCallback } from "react";
+import { useState, memo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Download,
@@ -7,10 +7,13 @@ import {
   ListPlus,
   Check,
   Play,
+  Pause,
   Loader2,
+  MoreHorizontal,
 } from "lucide-react";
 import type { Song } from "../types";
 import usePlayerStore from "../store/playerStore";
+import { audioControls } from "../hooks/useAudioPlayer";
 import AddToPlaylistSheet from "./AddToPlaylistSheet";
 
 interface SongRowProps {
@@ -32,6 +35,8 @@ const SongRow = memo(function SongRow({
 }: SongRowProps) {
   const navigate = useNavigate();
   const [showPlaylistSheet, setShowPlaylistSheet] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
 
   const currentSongIndex = usePlayerStore((s) => s.currentSongIndex);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
@@ -65,6 +70,19 @@ const SongRow = memo(function SongRow({
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [onPlay, song, playSong, navigate]);
 
+  // 独立播放按钮：当前歌曲则切换播放/暂停；否则播放这首
+  const handlePlayButton = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (isCurrent) {
+        audioControls.togglePlay();
+        return;
+      }
+      handlePlay();
+    },
+    [isCurrent, handlePlay]
+  );
+
   const handleToggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleFavoriteById(song.id);
@@ -92,6 +110,30 @@ const SongRow = memo(function SongRow({
     e.stopPropagation();
     setShowPlaylistSheet(true);
   };
+
+  const handleToggleMore = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMoreMenu((prev) => !prev);
+  };
+
+  // 点击外部关闭更多菜单
+  useEffect(() => {
+    if (!showMoreMenu) return;
+    const handleDocClick = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setShowMoreMenu(false);
+      }
+    };
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowMoreMenu(false);
+    };
+    document.addEventListener("mousedown", handleDocClick);
+    document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("mousedown", handleDocClick);
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [showMoreMenu]);
 
   const getRankStyle = () => {
     if (rank === undefined) return null;
@@ -150,10 +192,10 @@ const SongRow = memo(function SongRow({
         </div>
       )}
 
-      {/* PRD 2.4 字体规范：歌名 Outfit 14px 600，歌手 DM Sans 12px 400 */}
+      {/* PRD 2.4 字体规范：歌名 Outfit 14px 600，歌手 DM Sans 12px 400；完整显示不做截断 */}
       <div className="flex-1 min-w-0">
-        <p className={`font-outfit text-body font-semibold truncate flex items-center gap-1.5 ${isCurrent ? "text-primary" : "text-primary"}`}>
-          <span className="truncate">{song.title}</span>
+        <p className={`font-outfit text-body font-semibold flex items-start gap-1.5 break-words ${isCurrent ? "text-primary" : "text-primary"}`}>
+          <span className="whitespace-normal break-words">{song.title}</span>
           {song.isDelisted && (
             <span className="flex-shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-dm"
               style={{ background: "color-mix(in srgb, var(--error) 12%, transparent)", color: "var(--error)" }}>
@@ -161,25 +203,29 @@ const SongRow = memo(function SongRow({
             </span>
           )}
         </p>
-        <p className="font-dm text-caption text-soft truncate">{song.artist}</p>
+        <p className="font-dm text-caption text-soft whitespace-normal break-words">{song.artist}</p>
       </div>
 
       {song.isLoading && (
         <Loader2 className="w-4 h-4 text-faint animate-spin flex-shrink-0" />
       )}
 
-      {/* PRD 2.6 操作按钮：悬停显示 */}
+      {/* 操作按钮：播放 / 喜欢 / 加入待播放，其他收纳到「更多」菜单 */}
       <div
         className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0 ml-auto pl-1"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           className="song-row-action inline-flex"
-          onClick={handleDownload}
-          title={isDownloadedNow ? "已下载" : "下载"}
-          aria-label={isDownloadedNow ? "已下载" : "下载"}
+          onClick={handlePlayButton}
+          title={isCurrent && isPlaying ? "暂停" : "播放"}
+          aria-label={isCurrent && isPlaying ? "暂停" : "播放"}
         >
-          {isDownloadedNow ? <Check size={14} /> : <Download size={14} />}
+          {isCurrent && isPlaying ? (
+            <Pause size={14} fill="currentColor" style={{ color: "var(--accent)" }} />
+          ) : (
+            <Play size={14} fill="currentColor" style={{ color: "var(--accent)" }} />
+          )}
         </button>
 
         <button
@@ -191,35 +237,69 @@ const SongRow = memo(function SongRow({
           <Heart size={14} fill={isFavorite ? "currentColor" : "none"} />
         </button>
 
-        {showPlaylistMenu && (
-          <button
-            className="song-row-action inline-flex"
-            onClick={handlePickPlaylist}
-            title="加入歌单"
-            aria-label="加入歌单"
-          >
-            <Star size={14} />
-          </button>
-        )}
-
         <button
           className="song-row-action inline-flex"
           onClick={handleAddToQueue}
-          title="加入播放列表"
-          aria-label="加入播放列表"
+          title="加入待播放"
+          aria-label="加入待播放"
         >
           <ListPlus size={14} />
         </button>
 
-        <button
-          className="song-row-action inline-flex"
-          onClick={handlePlay}
-          title="播放"
-          aria-label="播放"
-          style={{ color: "var(--accent)" }}
-        >
-          <Play size={14} fill="currentColor" />
-        </button>
+        {/* 更多按钮：点击展开其他操作 */}
+        <div className="relative" ref={moreRef}>
+          <button
+            className={`song-row-action inline-flex ${showMoreMenu ? "is-active" : ""}`}
+            onClick={handleToggleMore}
+            title="更多"
+            aria-label="更多"
+            aria-expanded={showMoreMenu}
+            aria-haspopup="menu"
+          >
+            <MoreHorizontal size={14} />
+          </button>
+
+          {showMoreMenu && (
+            <div
+              role="menu"
+              className="absolute right-0 top-full mt-1 z-20 min-w-[160px] rounded-card border shadow-lg py-1"
+              style={{
+                background: "var(--card)",
+                borderColor: "var(--border)",
+              }}
+            >
+              {showPlaylistMenu && (
+                <button
+                  role="menuitem"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm font-dm transition-colors hover:bg-card-soft"
+                  style={{ color: "var(--text-soft)" }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMoreMenu(false);
+                    handlePickPlaylist(e);
+                  }}
+                >
+                  <Star size={14} />
+                  <span>加入歌单</span>
+                </button>
+              )}
+
+              <button
+                role="menuitem"
+                className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm font-dm transition-colors hover:bg-card-soft"
+                style={{ color: "var(--text-soft)" }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMoreMenu(false);
+                  handleDownload(e);
+                }}
+              >
+                {isDownloadedNow ? <Check size={14} /> : <Download size={14} />}
+                <span>{isDownloadedNow ? "已下载" : "下载"}</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 模块 4 - 单曲加入歌单（复用 AddToPlaylistSheet） */}

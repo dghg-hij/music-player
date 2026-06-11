@@ -1,9 +1,20 @@
 import { useState, useRef, useEffect } from "react";
-import { NavLink } from "react-router-dom";
-import { Home, User, Music2, ListMusic, Disc3, LogOut, ChevronDown, Settings as SettingsIcon, Sparkles } from "lucide-react";
-import ThemeModeToggle from "./ThemeModeToggle";
+import { NavLink, useNavigate } from "react-router-dom";
+import {
+  Home,
+  User,
+  Music2,
+  ListMusic,
+  Disc3,
+  LogOut,
+  ChevronDown,
+  Settings as SettingsIcon,
+  Sparkles,
+  Search,
+} from "lucide-react";
 import AuthModal from "./AuthModal";
 import ProfileEditModal from "./ProfileEditModal";
+import { DayNightToggle } from "./ThemeModeToggle";
 import useAuthStore from "../store/authStore";
 
 const NAV_ITEMS = [
@@ -26,6 +37,7 @@ function navItemStyle(isActive: boolean) {
 export default function TopNav() {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const user = useAuthStore((s) => s.user);
@@ -58,10 +70,11 @@ export default function TopNav() {
           backdropFilter: "blur(16px)",
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-8 h-14 md:h-16 flex items-center gap-2 md:gap-4">
+          {/* 品牌 Logo */}
           <NavLink
             to="/"
-            className="flex items-center gap-2 clickable-ring px-3 py-1.5"
+            className="flex items-center gap-2 clickable-ring px-2 md:px-3 py-1.5 flex-shrink-0"
           >
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -72,10 +85,13 @@ export default function TopNav() {
             >
               <Music2 size={16} className="text-white" strokeWidth={2.5} />
             </div>
-            <span className="font-outfit font-bold text-lg text-primary">聆音</span>
+            <span className="font-outfit font-bold text-base md:text-lg text-primary">
+              聆音
+            </span>
           </NavLink>
 
-          <nav className="flex items-center gap-1 ml-4">
+          {/* 桌面端导航链接 */}
+          <nav className="hidden md:flex items-center gap-1 ml-4">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               return (
@@ -93,20 +109,36 @@ export default function TopNav() {
                   }
                 >
                   <Icon size={14} />
-                  <span className="hidden sm:inline">{item.label}</span>
+                  <span>{item.label}</span>
                 </NavLink>
               );
             })}
           </nav>
 
-          <div className="ml-auto flex items-center gap-2">
-            <ThemeModeToggle />
+          {/* 右侧操作区 */}
+          <div className="ml-auto flex items-center gap-1.5 md:gap-2">
+            {/* 搜索入口（手机端可保留） */}
+            <button
+              onClick={() => navigate("/search")}
+              aria-label="搜索"
+              title="搜索"
+              className="clickable-pill w-9 h-9 rounded-full flex items-center justify-center text-soft hover:text-primary transition-colors"
+            >
+              <Search size={16} />
+            </button>
+
+            {/* 桌面端：日/夜切换（仅胶囊，色系圆点放设置页） */}
+            <div className="hidden md:flex items-center">
+              <DayNightToggle />
+            </div>
+
+            {/* 桌面端：设置入口 */}
             <NavLink
               to="/settings"
               aria-label="设置中心"
               title="设置中心"
               className={({ isActive }) =>
-                `clickable-pill w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                `hidden md:flex clickable-pill w-9 h-9 rounded-full items-center justify-center transition-colors ${
                   isActive ? "" : "text-soft"
                 }`
               }
@@ -150,7 +182,7 @@ export default function TopNav() {
                   <span className="font-dm text-sm text-primary max-w-[80px] truncate hidden sm:inline">
                     {user.nickname}
                   </span>
-                  <ChevronDown size={14} className="text-soft" />
+                  <ChevronDown size={14} className="text-soft hidden sm:block" />
                 </button>
 
                 {showDropdown && (
@@ -205,8 +237,8 @@ export default function TopNav() {
               </div>
             ) : (
               <button
-                onClick={() => openAuthModal("login")}
-                className="px-4 py-1.5 rounded-full text-sm font-dm font-semibold text-white transition-all duration-200"
+                onClick={() => navigate("/login")}
+                className="px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-dm font-semibold text-white transition-all duration-200"
                 style={{
                   background: "linear-gradient(135deg, var(--accent), var(--accent-2))",
                   boxShadow: "0 2px 10px -2px var(--accent)",

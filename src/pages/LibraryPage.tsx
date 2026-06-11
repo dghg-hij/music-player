@@ -86,16 +86,34 @@ export default function LibraryPage() {
             发现音乐 · 浏览分类 · 查看榜单
           </p>
         </div>
-        <button
-          onClick={() => navigate("/search")}
-          className="clickable-pill flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-dm text-primary"
-          style={{
-            background: "var(--card-soft)",
-            border: "1px solid var(--border)",
-          }}
-        >
-          <SearchIcon size={12} /> 搜索音乐
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="clickable-pill flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-dm text-white"
+            style={{ background: "var(--accent)" }}
+            title="导入本地歌曲"
+          >
+            <Plus size={12} /> 导入本地歌曲
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="audio/*,.mp3,.wav,.ogg,.flac,.aac,.m4a"
+            multiple
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <button
+            onClick={() => navigate("/search")}
+            className="clickable-pill flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-dm text-primary"
+            style={{
+              background: "var(--card-soft)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <SearchIcon size={12} /> 搜索音乐
+          </button>
+        </div>
       </div>
 
       {/* 音乐分类 - PRD 3.3.3 乐库浏览 */}
@@ -251,22 +269,6 @@ export default function LibraryPage() {
             <Heart size={12} fill={showFavorites ? "currentColor" : "none"} />
             我喜欢
           </button>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="clickable-pill px-3 py-2 rounded-full text-xs font-dm flex items-center gap-1.5 text-white"
-            style={{ background: "var(--accent)" }}
-            title="导入本地音乐"
-          >
-            <Plus size={12} /> 导入本地
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="audio/*,.mp3,.wav,.ogg,.flac,.aac,.m4a"
-            multiple
-            className="hidden"
-            onChange={handleFileChange}
-          />
         </div>
 
         <div className="card-surface p-1.5 sm:p-3 md:p-4 space-y-3">

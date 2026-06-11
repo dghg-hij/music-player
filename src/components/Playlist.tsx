@@ -1,7 +1,8 @@
 import { useRef } from "react";
 import type { Song } from "../types";
-import { Plus, Heart, ListPlus } from "lucide-react";
+import { Plus, Heart, ListPlus, Play, Pause } from "lucide-react";
 import usePlayerStore from "../store/playerStore";
+import { audioControls } from "../hooks/useAudioPlayer";
 
 interface PlaylistProps {
   songs: Song[];
@@ -31,12 +32,22 @@ export default function Playlist({
   const importLocalFiles = usePlayerStore((s) => s.importLocalFiles);
   const toggleShowFavorites = usePlayerStore((s) => s.toggleShowFavorites);
   const addToQueue = usePlayerStore((s) => s.addToQueue);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       importLocalFiles(e.target.files);
       e.target.value = "";
     }
+  };
+
+  const handlePlayClick = (e: React.MouseEvent, originalIndex: number, isActive: boolean) => {
+    e.stopPropagation();
+    if (isActive) {
+      audioControls.togglePlay();
+      return;
+    }
+    onSelectSong(originalIndex);
   };
 
   const displaySongs = showFavorites
@@ -131,6 +142,23 @@ export default function Playlist({
                     fill="currentColor"
                   />
                 )}
+                {/* 独立播放/暂停按钮 */}
+                <button
+                  onClick={(e) => handlePlayClick(e, originalIndex, isActive)}
+                  className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 ${
+                    isActive
+                      ? "text-accent opacity-100"
+                      : "text-white/30 hover:text-accent hover:bg-accent/10 opacity-0 group-hover:opacity-100"
+                  }`}
+                  aria-label={isActive && isPlaying ? "暂停" : "播放"}
+                  title={isActive && isPlaying ? "暂停" : "播放"}
+                >
+                  {isActive && isPlaying ? (
+                    <Pause size={14} fill="currentColor" />
+                  ) : (
+                    <Play size={14} fill="currentColor" />
+                  )}
+                </button>
                 {!isActive && (
                   <button
                     onClick={(e) => { e.stopPropagation(); addToQueue(song); }}

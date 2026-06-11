@@ -1,6 +1,6 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Flame, Loader2, Play, ListPlus } from "lucide-react";
+import { ArrowLeft, Flame, Loader2, Play, ListPlus, ChevronRight } from "lucide-react";
 import { RANKINGS } from "../data/songs";
 import usePlayerStore from "../store/playerStore";
 import { getChartSongs } from "../services/musicApi";
@@ -17,7 +17,7 @@ export default function RankingPage() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const ranking = RANKINGS.find((r) => r.id === id);
+  const ranking = RANKINGS.find((r) => r.id === id) ?? RANKINGS[0];
 
   useEffect(() => {
     if (!ranking) return;
@@ -26,7 +26,7 @@ export default function RankingPage() {
     setSongs([]);
     (async () => {
       try {
-        const results = await getChartSongs(ranking.playlistId, 20, ranking.query);
+        const results = await getChartSongs(ranking.playlistId, 30, ranking.query);
         if (cancelled) return;
         const list: Song[] = results.map((r, i) => ({
           id: 6000 + i,
@@ -63,11 +63,11 @@ export default function RankingPage() {
       <div className="text-center py-20">
         <p className="font-dm text-soft">未找到该排行榜</p>
         <Link
-          to="/ranking"
+          to="/library"
           className="inline-block mt-4 clickable-pill px-4 py-2 rounded-full text-sm font-dm text-primary"
           style={{ background: "var(--card-soft)" }}
         >
-          返回排行榜
+          返回乐库
         </Link>
       </div>
     );
@@ -75,6 +75,7 @@ export default function RankingPage() {
 
   return (
     <div className="space-y-6">
+      {/* 头部：榜单标题 + 描述 */}
       <div
         className="relative overflow-hidden rounded-3xl p-6 md:p-8"
         style={{
@@ -87,14 +88,14 @@ export default function RankingPage() {
           style={{ background: ranking.accent }}
         />
         <Link
-          to="/ranking"
+          to="/"
           className="inline-flex items-center gap-1.5 font-dm text-xs text-soft hover:text-primary transition-colors clickable-pill px-3 py-1.5 mb-4"
         >
-          <ArrowLeft size={14} /> 全部榜单
+          <ArrowLeft size={14} /> 返回首页
         </Link>
         <div className="flex items-center gap-5">
           <div
-            className="relative w-24 h-24 md:w-32 md:h-32 rounded-2xl overflow-hidden flex-shrink-0"
+            className="relative w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden flex-shrink-0"
             style={{ boxShadow: `0 0 30px -4px ${ranking.accent}99` }}
           >
             <img
@@ -112,44 +113,86 @@ export default function RankingPage() {
               className="absolute inset-0 flex items-center justify-center"
               style={{ background: "rgba(0,0,0,0.3)" }}
             >
-              <Flame size={32} className="text-white" />
+              <Flame size={28} className="text-white" />
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="font-outfit font-bold text-3xl md:text-4xl text-primary">
+            <p className="font-dm text-xs text-soft mb-1 flex items-center gap-1.5">
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full"
+                style={{ background: ranking.accent }}
+              />
+              排行榜
+            </p>
+            <h1 className="font-outfit font-bold text-2xl md:text-3xl text-primary">
               {ranking.name}
             </h1>
-            <p className="font-dm text-sm text-soft mt-2">
+            <p className="font-dm text-xs text-soft mt-1 line-clamp-2">
               {ranking.description}
             </p>
-            <p className="font-dm text-xs text-faint mt-1">
+            <p className="font-dm text-[11px] text-faint mt-1">
               共 {songs.length} 首歌曲 · 每周更新
             </p>
-            <div className="flex gap-2 mt-4">
+            <div className="flex gap-2 mt-3">
               <button
                 onClick={handlePlayAll}
                 disabled={songs.length === 0}
-                className="clickable-pill px-4 py-2 rounded-full text-sm font-dm text-white disabled:opacity-50"
+                className="clickable-pill px-3.5 py-1.5 rounded-full text-xs font-dm text-white disabled:opacity-50"
                 style={{
                   background: `linear-gradient(135deg, ${ranking.accent}, var(--accent-2))`,
                 }}
               >
-                <Play size={14} className="inline mr-1" fill="currentColor" /> 播放全部
+                <Play size={12} className="inline mr-1" fill="currentColor" /> 播放全部
               </button>
               <button
                 onClick={() => songs.forEach((s) => addToQueue(s))}
                 disabled={songs.length === 0}
-                className="clickable-pill px-4 py-2 rounded-full text-sm font-dm text-primary disabled:opacity-50"
+                className="clickable-pill px-3.5 py-1.5 rounded-full text-xs font-dm text-primary disabled:opacity-50"
                 style={{
                   background: "var(--card-soft)",
                   border: "1px solid var(--border-strong)",
                 }}
               >
-                <ListPlus size={14} className="inline mr-1" /> 加入待播放
+                <ListPlus size={12} className="inline mr-1" /> 加入待播放
               </button>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 歌曲词条上方：榜单切换 Tab */}
+      <div
+        className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        {RANKINGS.map((r) => {
+          const isActive = r.id === ranking.id;
+          return (
+            <button
+              key={r.id}
+              onClick={() => {
+                if (r.id !== ranking.id) navigate(`/ranking/${r.id}`);
+              }}
+              className="clickable-pill flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-dm transition-all whitespace-nowrap flex items-center gap-1"
+              style={
+                isActive
+                  ? {
+                      background: `linear-gradient(135deg, ${r.accent}, var(--accent-2))`,
+                      color: "white",
+                      boxShadow: `0 2px 10px -2px ${r.accent}80`,
+                    }
+                  : {
+                      background: "var(--card-soft)",
+                      color: "var(--text-soft)",
+                      border: "1px solid var(--border)",
+                    }
+              }
+            >
+              {r.name}
+              {isActive && <ChevronRight size={12} />}
+            </button>
+          );
+        })}
       </div>
 
       <div className="space-y-3">
@@ -172,68 +215,6 @@ export default function RankingPage() {
           </div>
         )}
       </div>
-      </div>
-    </div>
-  );
-}
-
-export function RankingListPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-outfit font-bold text-3xl text-primary">排行榜</h1>
-        <p className="font-dm text-sm text-soft mt-1">
-          点击榜单查看完整排行，收藏喜欢的歌曲到「我的」
-        </p>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {RANKINGS.map((r) => (
-          <Link
-            key={r.id}
-            to={`/ranking/${r.id}`}
-            className="group block clickable-ring"
-            style={{ borderRadius: "1.25rem" }}
-          >
-            <div
-              className="flex items-center gap-4 p-4 rounded-2xl"
-              style={{
-                background: "var(--card)",
-                border: "1px solid var(--border)",
-              }}
-            >
-              <div
-                className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0"
-                style={{ boxShadow: `0 0 18px -2px ${r.accent}80` }}
-              >
-                <img
-                  src={r.cover}
-                  alt={r.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const t = e.target as HTMLImageElement;
-                    t.style.display = "none";
-                    if (t.parentElement)
-                      t.parentElement.style.background = `linear-gradient(135deg, ${r.accent}, var(--accent-2))`;
-                  }}
-                />
-                <div
-                  className="absolute inset-0 flex items-center justify-center"
-                  style={{ background: "rgba(0,0,0,0.3)" }}
-                >
-                  <Flame size={24} className="text-white" />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-outfit font-semibold text-lg text-primary">
-                  {r.name}
-                </h3>
-                <p className="font-dm text-xs text-soft mt-1 line-clamp-2">
-                  {r.description}
-                </p>
-              </div>
-            </div>
-          </Link>
-        ))}
       </div>
     </div>
   );
