@@ -315,3 +315,130 @@ export const PREFERENCE_TAGS: PreferenceTag[] = [
 
 /** 推荐区域状态 */
 export type RecommendStatus = "idle" | "loading" | "ready" | "error";
+
+/* =========================================================
+ * 模块 7 会员中心 - PRD 3.7.3
+ * 备注：会员功能已下线，前端仍保留类型与本地服务代码以兼容既有数据
+ * ========================================================= */
+
+/** 会员等级 */
+export type MemberLevel = "normal" | "vip" | "svip";
+
+/** 订阅周期 */
+export type MemberCycle = "month" | "quarter" | "year";
+
+/** 订单状态 */
+export type MemberOrderStatus = "pending" | "paid" | "cancelled";
+
+/** 会员权益 Key */
+export type MemberRightKey =
+  | "lossless"
+  | "spatialAudio"
+  | "aiRecommend"
+  | "unlimitedDownloads";
+
+/** 单项权益元数据 */
+export interface MemberRightMeta {
+  /** 享受该权益所需的最低会员等级 */
+  minMember: MemberLevel;
+  /** 权益名称（展示用） */
+  label: string;
+  /** 权益说明（展示用） */
+  description: string;
+}
+
+/** 权益元数据字典 */
+export const MEMBER_RIGHT_META: Record<MemberRightKey, MemberRightMeta> = {
+  lossless: {
+    minMember: "vip",
+    label: "无损音质",
+    description: "畅听 FLAC 无损音源",
+  },
+  spatialAudio: {
+    minMember: "svip",
+    label: "空间音频",
+    description: "沉浸式环绕听感",
+  },
+  aiRecommend: {
+    minMember: "vip",
+    label: "AI 智能推荐",
+    description: "更懂你口味的歌单",
+  },
+  unlimitedDownloads: {
+    minMember: "svip",
+    label: "无限下载",
+    description: "离线畅听不受限",
+  },
+};
+
+/** 会员套餐 */
+export interface MemberPlan {
+  id: string;
+  name: string;
+  level: MemberLevel;
+  cycle: MemberCycle;
+  /** 价格（分） */
+  price: number;
+  description?: string;
+  badge?: string;
+}
+
+/** 默认会员套餐（VIP / SVIP × 月/季/年） */
+export const MEMBER_PLANS: MemberPlan[] = [
+  { id: "vip-month",    name: "VIP 月卡",   level: "vip",  cycle: "month",   price: 1500 },
+  { id: "vip-quarter",  name: "VIP 季卡",   level: "vip",  cycle: "quarter", price: 3900, badge: "省 600" },
+  { id: "vip-year",     name: "VIP 年卡",   level: "vip",  cycle: "year",    price: 13800, badge: "省 4200" },
+  { id: "svip-month",   name: "SVIP 月卡",  level: "svip", cycle: "month",   price: 2500 },
+  { id: "svip-quarter", name: "SVIP 季卡",  level: "svip", cycle: "quarter", price: 6900, badge: "省 600" },
+  { id: "svip-year",    name: "SVIP 年卡",  level: "svip", cycle: "year",    price: 25800, badge: "省 4200" },
+];
+
+/** 用户会员信息（PRD 3.7.3） */
+export interface MemberInfo {
+  uid: string;
+  level: MemberLevel;
+  /** 到期时间戳（毫秒），0 = 未开通 */
+  expireTime: number;
+  /** 是否自动续费（0/1） */
+  autoRenew: number;
+  /** 开通时间戳（毫秒） */
+  createdAt: number;
+  /** 已开通的权益 Key 列表 */
+  rights: MemberRightKey[];
+}
+
+/** 会员订单 */
+export interface MemberOrder {
+  orderNo: string;
+  planId: string;
+  level: MemberLevel;
+  cycle: MemberCycle;
+  amount: number;
+  paymentMethod: string;
+  status: MemberOrderStatus;
+  createdAt: number;
+  paidAt?: number;
+  effectiveUntil?: number;
+}
+
+/** 订阅请求（POST /api/member/subscribe） */
+export interface SubscribeRequest {
+  planId: string;
+  paymentMethod: string;
+}
+
+/** 订阅响应 */
+export interface SubscribeResponse {
+  orderId: string;
+  orderNo: string;
+  amount: number;
+  payUrl: string;
+}
+
+/** 支付回调请求（POST /api/member/pay/callback） */
+export interface PayCallbackPayload {
+  orderNo: string;
+  status: "success" | "fail" | "cancelled";
+  paymentMethod?: string;
+  transactionId?: string;
+}
